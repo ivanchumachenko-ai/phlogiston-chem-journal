@@ -156,8 +156,8 @@ export default function Home() {
   };
 
   const downloadUrl = typeof window !== "undefined"
-    ? new URL("/phlogiston.zip", window.location.origin).toString()
-    : "/phlogiston.zip";
+    ? new URL(`${import.meta.env.BASE_URL}phlogiston.zip`, window.location.origin).toString()
+    : `${import.meta.env.BASE_URL}phlogiston.zip`;
   const macDownloadCommand = `curl -L "${downloadUrl}" -o phlogiston.zip`;
   const macExtractCommand = "unzip phlogiston.zip -d phlogiston-offline";
   const macRunCommand = "cd phlogiston-offline && python3 -m http.server 8000";
@@ -1454,8 +1454,8 @@ export default function Home() {
                         <p>{t('helpDownloadText')}</p>
                         <div className="flex flex-col sm:flex-row gap-3 mt-1">
                           <a
-                            href="/Phlogiston-v1.2.zip"
-                            download
+                            href={`${import.meta.env.BASE_URL}phlogiston.zip`}
+                            download="phlogiston.zip"
                             className="bg-primary text-primary-foreground hover:bg-primary/90 transition-colors px-4 py-2.5 rounded-md font-medium inline-flex items-center justify-center gap-2 text-sm shadow-sm"
                             data-testid="link-download-pwa"
                           >
