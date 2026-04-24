@@ -1,0 +1,68 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "moV9_iajsRO0cDqzP85tC"
+uri = "file://client/src/assets/images/login-concept-1.png"
+type = "image"
+title = "Clean Apple style login screen"
+
+[[generated]]
+id = "Ih3y0H9-Av9PzRPijqeoq"
+uri = "file://client/src/assets/images/login-concept-2.png"
+type = "image"
+title = "Scientific split screen login"
+
+[[generated]]
+id = "wbtJiqV3rCzceEUYJvtYV"
+uri = "file://client/src/assets/images/login-concept-3.png"
+type = "image"
+title = "Hacker terminal login screen"
+
+[[generated]]
+id = "2TRy4N97amxxrx8XgWfYJ"
+uri = "file://client/src/assets/images/login-concept-4.png"
+type = "image"
+title = "Academic classic login screen"
+
+[[generated]]
+id = "oRpUqVM0L9jRXElLVywoM"
+uri = "file://client/src/assets/images/login-concept-5.png"
+type = "image"
+title = "Dark 3D molecule login screen"
+
+[[generated]]
+id = "p4dfhO9E8gGxVJ7lUPDWV"
+uri = "file://client/public/images/logo.png"
+type = "image"
+title = "Logo option 13 Esoteric 3"
+
+[[generated]]
+id = "Bhu_5hqwcs6RDlcBx5K7T"
+uri = "file://client/public/images/logo-alchemy.png"
+type = "image"
+title = "Blue transparent alchemy logo"
+
+[[generated]]
+id = "4XLXLRLUq-zcb8-dEz5t7"
+uri = "file://client/public/images/logo-eso-a.png"
+type = "image"
+title = "Fluid ribbon single line flame"
+
+[[generated]]
+id = "ye1OpVlVQ4y5ZxWUYxe5b"
+uri = "file://client/public/images/logo-eso-b.png"
+type = "image"
+title = "Intertwining dual line flame"
+
+[[generated]]
+id = "GMOS1HxWiVqLJ1XYKMTgB"
+uri = "file://client/public/images/logo-eso-c.png"
+type = "image"
+title = "Spiraling continuous line flame"
+
+[[generated]]
+id = "pU94iKLSsC0TsArwOe4TT"
+uri = "file://client/public/images/logo-eso-d.png"
+type = "image"
+title = "Calligraphic sharp line flame"

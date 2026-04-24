@@ -1,0 +1,65 @@
+PHLOGISTON — OFFLINE INSTALL GUIDE
+=================================
+
+Updated: 2026-04-10
+
+This archive contains the latest offline-ready build of Phlogiston.
+
+Quick start on macOS
+--------------------
+1. Unzip the archive into a folder.
+2. Open Terminal in the extracted folder.
+3. Run:
+   python3 -m http.server 8000
+4. Open in your browser:
+   http://localhost:8000
+
+Quick start on Windows
+----------------------
+1. Unzip the archive into a folder.
+2. Open PowerShell in the extracted folder.
+3. Run:
+   py -m http.server 8000
+4. Open in your browser:
+   http://localhost:8000
+
+Terminal download commands for the latest archive
+-------------------------------------------------
+Replace YOUR_SITE_URL with the address of the website where Phlogiston is hosted.
+
+macOS:
+   curl -L "YOUR_SITE_URL/phlogiston.zip" -o phlogiston.zip
+
+Windows PowerShell:
+   Invoke-WebRequest -Uri "YOUR_SITE_URL/phlogiston.zip" -OutFile "phlogiston.zip"
+
+Terminal extraction commands
+----------------------------
+macOS:
+   unzip phlogiston.zip -d phlogiston-offline
+
+Windows PowerShell:
+   Expand-Archive -Path ".\phlogiston.zip" -DestinationPath ".\phlogiston-offline" -Force
+
+Alternative ports
+-----------------
+If port 8000 is busy, use another one, for example:
+- macOS:   python3 -m http.server 8080
+- Windows: py -m http.server 8080
+
+Package contents
+----------------
+- index.html
+- assets/
+- images/
+- manifest.json
+- manifest.webmanifest
+- favicon.png
+- sw.js
+- INSTALL_PHLOGISTON.txt
+
+Notes
+-----
+- The app works offline after it is opened once in the browser.
+- PubChem lookup requires internet access.
+- Saved syntheses and local data stay in your browser storage on that machine.

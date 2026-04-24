@@ -1,0 +1,17 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <script src="https://unpkg.com/smiles-drawer@1.0.10/dist/smiles-drawer.min.js"></script>
+</head>
+<body>
+  <canvas id="c" width="400" height="400"></canvas>
+  <script>
+    let smiles = "C1COCCN1"; // morpholine
+    let drawer = new SmilesDrawer.Drawer({ width: 400, height: 400 });
+    SmilesDrawer.parse(smiles, function(tree) {
+      drawer.draw(tree, document.getElementById("c"), "light", false);
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+ChemCalc-source.zip filter=lfs diff=lfs merge=lfs -text
+client/public/chemcalc.zip filter=lfs diff=lfs merge=lfs -text
+phlogiston-source.zip filter=lfs diff=lfs merge=lfs -text
+phlogiston-source-v1.2.zip filter=lfs diff=lfs merge=lfs -text
+zi3VaVxP filter=lfs diff=lfs merge=lfs -text
+phlogiston-source-code.zip filter=lfs diff=lfs merge=lfs -text

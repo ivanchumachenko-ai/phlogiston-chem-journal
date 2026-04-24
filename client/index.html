@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ru" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+
+    <title>Phlogiston</title>
+    <meta property="og:title" content="Phlogiston" />
+    <meta property="og:description" content="Offline reagent calculator for synthetic chemists with bilingual UI, structure drawing, and local synthesis history." />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@replit" />
+    <meta name="twitter:title" content="Phlogiston" />
+    <meta name="twitter:description" content="Offline reagent calculator for synthetic chemists with bilingual UI, structure drawing, and local synthesis history." />
+    
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="apple-touch-icon" href="/favicon.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="manifest" href="/manifest.json">
+    <script>
+      // Automatically set dark mode based on system preference if no localStorage override
+      if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.classList.add('dark')
+      } else {
+        document.documentElement.classList.remove('dark')
+      }
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script>
+      window.onerror = function(message, source, lineno, colno, error) {
+        var errDiv = document.createElement('div');
+        errDiv.style.cssText = 'position:fixed;top:0;left:0;right:0;background:red;color:white;z-index:9999;padding:10px;font-size:12px;word-wrap:break-word;';
+        errDiv.innerHTML = 'Error: ' + message + '<br>Line: ' + lineno + '<br>Source: ' + source;
+        document.body.appendChild(errDiv);
+        return false;
+      };
+      window.addEventListener('unhandledrejection', function(event) {
+        var errDiv = document.createElement('div');
+        errDiv.style.cssText = 'position:fixed;top:0;left:0;right:0;background:darkred;color:white;z-index:9999;padding:10px;font-size:12px;word-wrap:break-word;';
+        errDiv.innerHTML = 'Unhandled Promise Rejection: ' + (event.reason && event.reason.message ? event.reason.message : event.reason);
+        document.body.appendChild(errDiv);
+      });
+    </script>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
