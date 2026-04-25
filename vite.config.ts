@@ -32,16 +32,16 @@ export default defineConfig({
         background_color: '#ffffff',
         display: 'standalone',
         orientation: 'portrait',
-        scope: '/',
-        start_url: '/',
+        scope: '/phlogiston-chem-journal/',
+        start_url: '/phlogiston-chem-journal/',
         icons: [
           {
-            src: '/favicon.png',
+            src: '/phlogiston-chem-journal/favicon.png',
             sizes: '192x192',
             type: 'image/png'
           },
           {
-            src: '/favicon.png',
+            src: '/phlogiston-chem-journal/favicon.png',
             sizes: '512x512',
             type: 'image/png'
           }
