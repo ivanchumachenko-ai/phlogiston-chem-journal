@@ -34,7 +34,7 @@ jobs:
       - name: Unzip ready files
         run: |
           unzip dist/public/phlogiston.zip -d public_html
-          cp dist/public/phlogiston.zip public_html/project.zip
+          cp dist/public/phlogiston.zip public_html/phlogiston.zip
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload artifact
