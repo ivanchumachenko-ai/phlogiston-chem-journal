@@ -270,9 +270,11 @@ export async function openPublicationPdf(entries: ReagentEntry[], details: Synth
     };
 
     localStorage.setItem(PDF_EXPORT_STORAGE_KEY, JSON.stringify(payload));
-    const previewWindow = window.open("/print", "_blank", "noopener,noreferrer");
+    // Use hash router path to ensure it works on GitHub Pages subdirectories
+    const printPath = window.location.pathname + '#/print';
+    const previewWindow = window.open(printPath, "_blank", "noopener,noreferrer");
     if (!previewWindow) {
-      window.location.href = "/print";
+      window.location.href = printPath;
     }
     return;
   }
@@ -307,9 +309,9 @@ export async function openPublicationPdf(entries: ReagentEntry[], details: Synth
 
   localStorage.setItem(PDF_EXPORT_STORAGE_KEY, JSON.stringify(payload));
 
-  // Load the print page in the iframe. Use the current location with hash router if active,
-  // or window.location.origin + '/print' for absolute
-  const printUrl = window.location.origin + '/print';
+  // Load the print page in the iframe using hash routing
+  // window.location.pathname ensures it works on GitHub Pages subdirectories
+  const printUrl = window.location.origin + window.location.pathname + '#/print';
   iframe.src = printUrl;
   
   await new Promise<void>((resolve) => {
