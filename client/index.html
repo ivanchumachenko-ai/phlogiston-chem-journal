@@ -33,21 +33,6 @@
   </head>
   <body>
     <div id="root"></div>
-    <script>
-      window.onerror = function(message, source, lineno, colno, error) {
-        var errDiv = document.createElement('div');
-        errDiv.style.cssText = 'position:fixed;top:0;left:0;right:0;background:red;color:white;z-index:9999;padding:10px;font-size:12px;word-wrap:break-word;';
-        errDiv.innerHTML = 'Error: ' + message + '<br>Line: ' + lineno + '<br>Source: ' + source;
-        document.body.appendChild(errDiv);
-        return false;
-      };
-      window.addEventListener('unhandledrejection', function(event) {
-        var errDiv = document.createElement('div');
-        errDiv.style.cssText = 'position:fixed;top:0;left:0;right:0;background:darkred;color:white;z-index:9999;padding:10px;font-size:12px;word-wrap:break-word;';
-        errDiv.innerHTML = 'Unhandled Promise Rejection: ' + (event.reason && event.reason.message ? event.reason.message : event.reason);
-        document.body.appendChild(errDiv);
-      });
-    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
