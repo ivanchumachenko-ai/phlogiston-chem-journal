@@ -1,1 +1,1 @@
-Tell user to run add, continue, and push.
+Tell user to clear cache on phone.
