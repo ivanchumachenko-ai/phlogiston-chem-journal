@@ -32,7 +32,9 @@ jobs:
       - name: Build site
         run: npm run build
       - name: Unzip ready files
-        run: unzip dist/public/phlogiston.zip -d public_html
+        run: |
+          unzip dist/public/phlogiston.zip -d public_html
+          cp dist/public/phlogiston.zip public_html/project.zip
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload artifact
