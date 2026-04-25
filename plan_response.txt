@@ -1,0 +1,1 @@
+The user got fatal: no rebase in progress because Replit auto-save finished it. I just need to tell them to pull --rebase and push again.
