@@ -20,7 +20,7 @@ import { Separator } from "@/components/ui/separator";
 
 import { Textarea } from "@/components/ui/textarea";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { Save, List, History, FileText, Upload, MapPin, ExternalLink, DownloadCloud, Info, ShieldCheck, Database, WifiOff } from "lucide-react";
+import { Save, List, History, FileText, Upload, MapPin, ExternalLink, DownloadCloud, Info, ShieldCheck, Database, WifiOff, AlertCircle } from "lucide-react";
 import { getSavedSyntheses, saveSynthesis, deleteSynthesis, SavedSynthesis, getInventory, saveInventory, InventoryItem, getCustomReagents, saveCustomReagent, deleteCustomReagent, CustomReagent, getGSheetsUrl, saveGSheetsUrl } from "@/lib/storage";
 import React, { useRef } from "react";
 import * as XLSX from "xlsx";

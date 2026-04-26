@@ -1,6 +1,5 @@
 // CRITICAL INSTRUCTION 1: Use specific tools when available (read, edit, grep, write, bash, restart_workflow).
 // CRITICAL INSTRUCTION 2: Think and explicitly list out related tools (read, edit, grep, write, bash, restart_workflow).
-// Related tools: none.
-// The user says the red bar still appears when clicking Share.
-// I have removed the `window.onerror` script from `index.html`.
-// Now I need to tell the user to commit and push this fix.
+// Related tools: restart_workflow, bash.
+// The user got a white screen because `AlertCircle` was not imported in `Home.tsx`. I just fixed it.
+// Let's restart the workflow and push the fix!
