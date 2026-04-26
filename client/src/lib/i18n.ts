@@ -251,6 +251,10 @@ export const translations = {
     helpSyncGSheetsStep2: "2. Выберите нужный лист и формат CSV, затем нажмите «Опубликовать».",
     helpSyncGSheetsStep3: "3. Скопируйте полученную ссылку.",
     helpSyncGSheetsStep4: "4. Откройте левое меню, вставьте ссылку в поле «Синхронизация Google Sheets» и нажмите «Загрузить».",
+    
+    legalDisclaimerTitle: "Отказ от ответственности",
+    legalDisclaimerText: "Приложение Phlogiston предоставляется «как есть» (as is). Разработчик не несет ответственности за любые прямые или косвенные убытки, испорченные реактивы или неудачные синтезы, возникшие в результате использования расчетов из данного приложения. Пользователь обязан самостоятельно проверять критически важные расчеты.",
+    
     helpSyncExcel: "Загрузка из Excel / CSV",
     helpSyncExcelText: "В том же левом меню нажмите кнопку «Excel» и выберите файл с компьютера (.xlsx, .xls, .csv).",
     helpCalcTitle: "2. Расчет",
@@ -529,6 +533,10 @@ export const translations = {
     helpSyncGSheetsStep2: "2. Select the required sheet and CSV format, click \"Publish\".",
     helpSyncGSheetsStep3: "3. Copy the resulting link.",
     helpSyncGSheetsStep4: "4. Open the left menu (list icon), paste the link into the \"Google Sheets Sync\" field, and click \"Load\".",
+    
+    legalDisclaimerTitle: "Disclaimer",
+    legalDisclaimerText: "The Phlogiston app is provided 'as is'. The developer is not responsible for any direct or indirect damages, spoiled reagents, or failed syntheses resulting from the use of calculations from this application. The user is responsible for independently verifying critical calculations.",
+    
     helpSyncExcel: "Load from Excel / CSV",
     helpSyncExcelText: "In the same left menu, click the \"Excel\" button and select a file from your computer (.xlsx, .xls, .csv).",
     helpCalcTitle: "2. Calculation",

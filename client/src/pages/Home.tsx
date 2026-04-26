@@ -1279,6 +1279,16 @@ export default function Home() {
                           {t('helpWhySafeText')}
                         </p>
                       </div>
+
+                      <div className="bg-destructive/10 p-3 rounded-md border border-destructive/20 mt-3">
+                        <p className="font-semibold text-destructive mb-1 flex items-center gap-1.5 text-xs">
+                          <AlertCircle className="w-3.5 h-3.5" />
+                          {t('legalDisclaimerTitle')}
+                        </p>
+                        <p className="text-destructive/80 text-[11px] leading-relaxed">
+                          {t('legalDisclaimerText')}
+                        </p>
+                      </div>
                     </div>
 
                     <Separator />
