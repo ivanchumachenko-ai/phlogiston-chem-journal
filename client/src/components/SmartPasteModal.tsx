@@ -53,34 +53,27 @@ export function SmartPasteModal({ onAddEntries }: SmartPasteModalProps) {
       const regexSolvent = /([a-zA-Z0-9\-\(\)\s\,\.]+?)\s*\(\s*([\d\.]+)\s*(mL|L|μL|g|mg|kg)\s*\)/gi;
 
       // Helper to find the longest valid chemical name by checking suffixes
-      // Algorithm changed to right-to-left: build from the rightmost word until we hit an invalid word.
+      // Reverted to original left-to-right parsing as requested
       const findLongestValidName = async (rawName: string) => {
         if (cancelledRef.current) return null;
         // Clean trailing punctuation
         let cleanStr = rawName.replace(/^[\s,:]+|[\s,:]+$/g, '');
         const words = cleanStr.split(/\s+/);
         
-        let longestValid = null;
-        let currentStr = "";
-        
-        for (let i = words.length - 1; i >= 0; i--) {
+        for (let i = 0; i < words.length; i++) {
           if (cancelledRef.current) return null;
           
-          currentStr = words[i] + (currentStr ? " " + currentStr : "");
-          // Skip if candidate is too short and no valid match yet
-          if (currentStr.length < 3 && !/^[A-Z]/.test(currentStr) && !longestValid) continue;
+          const candidate = words.slice(i).join(" ");
+          // Skip if candidate is too short (e.g. just "a" or "of")
+          if (candidate.length < 3 && !/^[A-Z]/.test(candidate)) continue;
           
-          const props = await get_properties_async(currentStr);
-          
+          const props = await get_properties_async(candidate);
           // STRICT FILTER: Accept if we found properties with formula or structure
           if (props && (props.formula || props.cid || props.smiles)) {
-            longestValid = { name: currentStr, properties: props };
-          } else if (longestValid) {
-            // If we already found a valid suffix (e.g. "benzyl bromide"), but adding the next word ("of benzyl bromide") makes it invalid, STOP and return the valid one.
-            break;
+            return { name: candidate, properties: props };
           }
         }
-        return longestValid;
+        return null;
       };
 
       const scale = parseFloat(scaleFactor) || 1;
