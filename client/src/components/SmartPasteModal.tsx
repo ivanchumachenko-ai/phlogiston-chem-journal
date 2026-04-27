@@ -2,9 +2,10 @@ import React, { useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Wand2, AlertCircle } from "lucide-react";
+import { Wand2, AlertCircle, Sparkles, Loader2 } from "lucide-react";
 import { ReagentEntry } from "@/lib/export";
 import { getInventory } from "@/lib/storage";
+import { parseWithFreeAI } from "@/lib/ai";
 
 interface SmartPasteModalProps {
   onAddEntries: (entries: ReagentEntry[]) => void;
@@ -14,8 +15,10 @@ export function SmartPasteModal({ onAddEntries }: SmartPasteModalProps) {
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
   const [error, setError] = useState("");
+  const [isAiLoading, setIsAiLoading] = useState(false);
 
-  const parseText = () => {
+  // Fallback to local parsing if AI fails or user chooses it
+  const parseTextLocal = () => {
     try {
       const inventory = getInventory();
       const entries: ReagentEntry[] = [];
@@ -137,7 +140,82 @@ export function SmartPasteModal({ onAddEntries }: SmartPasteModalProps) {
       setText("");
       setError("");
     } catch (e: any) {
-      setError(e.message || "Ошибка распознавания");
+      setError(e.message || "Ошибка локального распознавания");
+    }
+  };
+
+  const parseTextAI = async () => {
+    if (!text.trim()) return;
+    
+    setIsAiLoading(true);
+    setError("");
+    
+    try {
+      const aiChemicals = await parseWithFreeAI(text);
+      
+      if (!aiChemicals || aiChemicals.length === 0) {
+        // Fallback to local parsing
+        parseTextLocal();
+        setIsAiLoading(false);
+        return;
+      }
+      
+      const inventory = getInventory();
+      const entries: ReagentEntry[] = [];
+      
+      aiChemicals.forEach((chem: any) => {
+        const name = String(chem.name || "Unknown");
+        
+        let massUnit: "mg" | "g" = "mg";
+        if (chem.massUnit === 'g') massUnit = 'g';
+        
+        let volUnit: "uL" | "mL" = "mL";
+        if (chem.volumeUnit === 'uL') volUnit = 'uL';
+        
+        let molesUnit: "mmol" | "mol" = "mmol";
+        if (chem.molesUnit === 'mol') molesUnit = 'mol';
+        
+        const entry: ReagentEntry = {
+          id: crypto.randomUUID(),
+          nameOrFormula: name,
+          molarMass: 0,
+          mass: typeof chem.mass === 'number' ? chem.mass : undefined,
+          massUnit,
+          volume: typeof chem.volume === 'number' ? chem.volume : undefined,
+          volumeUnit: volUnit,
+          moles: typeof chem.moles === 'number' ? chem.moles : undefined,
+          molesUnit,
+          properties: {}
+        };
+        
+        // Try to match with inventory
+        const invItem = inventory.find(i => i.name.toLowerCase() === name.toLowerCase());
+        if (invItem) {
+          entry.molarMass = parseFloat(invItem.molarMass || "0") || 0;
+          if (invItem.formula) entry.nameOrFormula = `${name} (${invItem.formula})`;
+          if (invItem.density) entry.density = parseFloat(invItem.density);
+        } else if (entry.mass && entry.moles) {
+          // Approximate molar mass
+          let massInG = entry.massUnit === 'g' ? entry.mass : entry.mass / 1000;
+          let molesInMol = entry.molesUnit === 'mol' ? entry.moles : entry.moles / 1000;
+          if (molesInMol > 0) {
+            entry.molarMass = massInG / molesInMol;
+          }
+        }
+        
+        entries.push(entry);
+      });
+      
+      onAddEntries(entries);
+      setOpen(false);
+      setText("");
+      setError("");
+    } catch (e: any) {
+      console.error("AI parse error:", e);
+      // Fallback to local parsing on AI error
+      parseTextLocal();
+    } finally {
+      setIsAiLoading(false);
     }
   };
 
@@ -184,12 +262,31 @@ export function SmartPasteModal({ onAddEntries }: SmartPasteModalProps) {
           )}
         </div>
         
-        <DialogFooter>
-          <Button variant="secondary" onClick={() => setOpen(false)}>Отмена</Button>
-          <Button onClick={parseText} disabled={!text.trim()} className="gap-2">
-            <Wand2 className="w-4 h-4" />
-            Распознать
-          </Button>
+        <DialogFooter className="flex-col sm:flex-row gap-2">
+          <Button variant="secondary" onClick={() => setOpen(false)} disabled={isAiLoading}>Отмена</Button>
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+            <Button 
+              variant="outline"
+              onClick={parseTextLocal} 
+              disabled={!text.trim() || isAiLoading} 
+              className="gap-2"
+            >
+              <Wand2 className="w-4 h-4" />
+              Обычный парсинг
+            </Button>
+            <Button 
+              onClick={parseTextAI} 
+              disabled={!text.trim() || isAiLoading} 
+              className="gap-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white border-0"
+            >
+              {isAiLoading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Sparkles className="w-4 h-4" />
+              )}
+              AI Парсинг
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
