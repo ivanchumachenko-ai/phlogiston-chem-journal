@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -21,10 +21,20 @@ export function SmartPasteModal({ onAddEntries }: SmartPasteModalProps) {
   const [progress, setProgress] = useState(0);
   const [progressText, setProgressText] = useState("");
   const [scaleFactor, setScaleFactor] = useState<string>("1");
+  const cancelledRef = useRef(false);
+
+  const handleCancel = () => {
+    cancelledRef.current = true;
+    setIsAiLoading(false);
+    setIsLocalLoading(false);
+    setOpen(false);
+    setProgress(0);
+  };
 
   // Fallback to local parsing if AI fails or user chooses it
   const parseTextLocal = async () => {
     try {
+      cancelledRef.current = false;
       setIsLocalLoading(true);
       setProgress(10);
       setProgressText("Анализ текста...");
@@ -43,29 +53,42 @@ export function SmartPasteModal({ onAddEntries }: SmartPasteModalProps) {
       const regexSolvent = /([a-zA-Z0-9\-\(\)\s\,\.]+?)\s*\(\s*([\d\.]+)\s*(mL|L|μL|g|mg|kg)\s*\)/gi;
 
       // Helper to find the longest valid chemical name by checking suffixes
+      // Algorithm changed to right-to-left: build from the rightmost word until we hit an invalid word.
       const findLongestValidName = async (rawName: string) => {
+        if (cancelledRef.current) return null;
         // Clean trailing punctuation
         let cleanStr = rawName.replace(/^[\s,:]+|[\s,:]+$/g, '');
         const words = cleanStr.split(/\s+/);
         
-        for (let i = 0; i < words.length; i++) {
-          const candidate = words.slice(i).join(" ");
-          // Skip if candidate is too short (e.g. just "a" or "of")
-          if (candidate.length < 3 && !/^[A-Z]/.test(candidate)) continue;
+        let longestValid = null;
+        let currentStr = "";
+        
+        for (let i = words.length - 1; i >= 0; i--) {
+          if (cancelledRef.current) return null;
           
-          const props = await get_properties_async(candidate);
+          currentStr = words[i] + (currentStr ? " " + currentStr : "");
+          // Skip if candidate is too short and no valid match yet
+          if (currentStr.length < 3 && !/^[A-Z]/.test(currentStr) && !longestValid) continue;
+          
+          const props = await get_properties_async(currentStr);
+          
           // STRICT FILTER: Accept if we found properties with formula or structure
           if (props && (props.formula || props.cid || props.smiles)) {
-            return { name: candidate, properties: props };
+            longestValid = { name: currentStr, properties: props };
+          } else if (longestValid) {
+            // If we already found a valid suffix (e.g. "benzyl bromide"), but adding the next word ("of benzyl bromide") makes it invalid, STOP and return the valid one.
+            break;
           }
         }
-        return null;
+        return longestValid;
       };
 
       const scale = parseFloat(scaleFactor) || 1;
 
+      regexSolid.lastIndex = 0;
       let match;
       while ((match = regexSolid.exec(text)) !== null) {
+        if (cancelledRef.current) return;
         const rawName = match[1].trim();
         const validMatch = await findLongestValidName(rawName);
         if (!validMatch) continue; // Skip garbage
@@ -120,6 +143,7 @@ export function SmartPasteModal({ onAddEntries }: SmartPasteModalProps) {
 
       regexSolidInverted.lastIndex = 0;
       while ((match = regexSolidInverted.exec(text)) !== null) {
+        if (cancelledRef.current) return;
         const rawName = match[1].trim();
         const validMatch = await findLongestValidName(rawName);
         if (!validMatch) continue;
@@ -167,6 +191,7 @@ export function SmartPasteModal({ onAddEntries }: SmartPasteModalProps) {
 
       regexSolvent.lastIndex = 0;
       while ((match = regexSolvent.exec(text)) !== null) {
+        if (cancelledRef.current) return;
         const rawName = match[1].trim();
         const validMatch = await findLongestValidName(rawName);
         if (!validMatch) continue;
@@ -232,13 +257,25 @@ export function SmartPasteModal({ onAddEntries }: SmartPasteModalProps) {
   const parseTextAI = async () => {
     if (!text.trim()) return;
     
+    cancelledRef.current = false;
     setIsAiLoading(true);
     setError("");
     setProgress(10);
-    setProgressText("Анализ текста через AI...");
+    setProgressText("Ожидание ответа AI (около 5-10 сек)...");
+    
+    // Fake progress interval while waiting for AI
+    const fakeProgressInterval = setInterval(() => {
+      setProgress(p => {
+        if (p < 45) return p + 2;
+        return p;
+      });
+    }, 500);
     
     try {
       const aiChemicals = await parseWithFreeAI(text);
+      clearInterval(fakeProgressInterval);
+      
+      if (cancelledRef.current) return;
       
       if (!aiChemicals || aiChemicals.length === 0) {
         // Fallback to local parsing
@@ -258,6 +295,7 @@ export function SmartPasteModal({ onAddEntries }: SmartPasteModalProps) {
       const parsedEntries: (ReagentEntry | null)[] = [];
       
       for (let i = 0; i < validAiChemicals.length; i++) {
+        if (cancelledRef.current) return;
         const chem = validAiChemicals[i];
         const name = String(chem.name || "Unknown");
         setProgressText(`Поиск свойств для: ${name} (${i + 1}/${validAiChemicals.length})`);
@@ -332,6 +370,7 @@ export function SmartPasteModal({ onAddEntries }: SmartPasteModalProps) {
       setScaleFactor("1");
       setProgress(0);
     } catch (e: any) {
+      if (cancelledRef.current) return;
       console.error("AI parse error:", e);
       // Fallback to local parsing on AI error
       parseTextLocal();
@@ -412,7 +451,7 @@ export function SmartPasteModal({ onAddEntries }: SmartPasteModalProps) {
         </div>
         
         <DialogFooter className="flex-col sm:flex-row gap-2">
-          <Button type="button" variant="secondary" onClick={() => setOpen(false)} disabled={isAiLoading || isLocalLoading}>Отмена</Button>
+          <Button type="button" variant="secondary" onClick={handleCancel}>Отмена</Button>
           <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
             <Button 
               type="button"
