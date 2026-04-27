@@ -2037,7 +2037,14 @@ export default function Home() {
                 <Badge variant="secondary" className="ml-2">{entries.length}</Badge>
               </CardTitle>
               <div className="flex items-center gap-2">
-                <SmartPasteModal onAddEntries={(newEntries) => setEntries(prev => [...prev, ...newEntries])} />
+                <SmartPasteModal onAddEntries={(newEntries, pastedText) => {
+                  setEntries(prev => [...prev, ...newEntries]);
+                  if (pastedText && !synthProcedure) {
+                    setSynthProcedure(pastedText);
+                  } else if (pastedText) {
+                    setSynthProcedure(prev => prev + "\n\n" + pastedText);
+                  }
+                }} />
                 {entries.length > 0 && (
                   <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => setEntries([])}>
                     {t('headerClear')}

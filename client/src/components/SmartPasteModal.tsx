@@ -9,7 +9,7 @@ import { parseWithFreeAI } from "@/lib/ai";
 import { get_properties_async } from "@/lib/chemistry";
 
 interface SmartPasteModalProps {
-  onAddEntries: (entries: ReagentEntry[]) => void;
+  onAddEntries: (entries: ReagentEntry[], pastedText: string) => void;
 }
 
 export function SmartPasteModal({ onAddEntries }: SmartPasteModalProps) {
@@ -17,6 +17,7 @@ export function SmartPasteModal({ onAddEntries }: SmartPasteModalProps) {
   const [text, setText] = useState("");
   const [error, setError] = useState("");
   const [isAiLoading, setIsAiLoading] = useState(false);
+  const [scaleFactor, setScaleFactor] = useState<string>("1");
 
   // Fallback to local parsing if AI fails or user chooses it
   const parseTextLocal = async () => {
@@ -43,13 +44,15 @@ export function SmartPasteModal({ onAddEntries }: SmartPasteModalProps) {
         return name.length > 1 ? name : rawName.trim();
       };
 
+      const scale = parseFloat(scaleFactor) || 1;
+
       let match;
       while ((match = regexSolid.exec(text)) !== null) {
         const rawName = match[1].trim();
         const name = extractName(rawName);
-        const amount = parseFloat(match[2]);
+        const amount = parseFloat(match[2]) * scale;
         const unitStr = match[3].toLowerCase();
-        const moles = parseFloat(match[4]);
+        const moles = parseFloat(match[4]) * scale;
         const molesUnitStr = match[5].toLowerCase();
         
         if (foundReagents.includes(name.toLowerCase())) continue;
@@ -105,7 +108,7 @@ export function SmartPasteModal({ onAddEntries }: SmartPasteModalProps) {
       while ((match = regexSolvent.exec(text)) !== null) {
         const rawName = match[1].trim();
         const name = extractName(rawName);
-        const amount = parseFloat(match[2]);
+        const amount = parseFloat(match[2]) * scale;
         const unitStr = match[3].toLowerCase();
 
         if (foundReagents.includes(name.toLowerCase())) continue;
@@ -157,10 +160,11 @@ export function SmartPasteModal({ onAddEntries }: SmartPasteModalProps) {
         return;
       }
 
-      onAddEntries(entries);
+      onAddEntries(entries, text);
       setOpen(false);
       setText("");
       setError("");
+      setScaleFactor("1");
     } catch (e: any) {
       setError(e.message || "Ошибка локального распознавания");
     } finally {
@@ -185,6 +189,7 @@ export function SmartPasteModal({ onAddEntries }: SmartPasteModalProps) {
       }
       
       const inventory = getInventory();
+      const scale = parseFloat(scaleFactor) || 1;
       
       const validAiChemicals = aiChemicals.filter((chem: any) => chem && chem.name && typeof chem.name === 'string');
       
@@ -207,15 +212,19 @@ export function SmartPasteModal({ onAddEntries }: SmartPasteModalProps) {
           return null; // Return null so we can filter it out later
         }
         
+        const mass = typeof chem.mass === 'number' ? chem.mass * scale : undefined;
+        const volume = typeof chem.volume === 'number' ? chem.volume * scale : undefined;
+        const moles = typeof chem.moles === 'number' ? chem.moles * scale : undefined;
+
         const entry: ReagentEntry = {
           id: crypto.randomUUID(),
           nameOrFormula: name,
           molarMass: properties?.mw || 0,
-          mass: typeof chem.mass === 'number' ? chem.mass : undefined,
+          mass,
           massUnit,
-          volume: typeof chem.volume === 'number' ? chem.volume : undefined,
+          volume,
           volumeUnit: volUnit,
-          moles: typeof chem.moles === 'number' ? chem.moles : undefined,
+          moles,
           molesUnit,
           isReference: false,
           properties: properties || null,
@@ -248,10 +257,11 @@ export function SmartPasteModal({ onAddEntries }: SmartPasteModalProps) {
         return;
       }
       
-      onAddEntries(entries);
+      onAddEntries(entries, text);
       setOpen(false);
       setText("");
       setError("");
+      setScaleFactor("1");
     } catch (e: any) {
       console.error("AI parse error:", e);
       // Fallback to local parsing on AI error
@@ -284,6 +294,19 @@ export function SmartPasteModal({ onAddEntries }: SmartPasteModalProps) {
           <div className="text-xs text-muted-foreground bg-muted p-3 rounded-md">
             <p className="font-medium mb-1">Пример поддерживаемого формата:</p>
             <p className="font-mono">To a solution of benzyl bromide (1.71 g, 10.0 mmol) in DMF (20 mL) was added K2CO3 (2.07 g, 15.0 mmol)...</p>
+          </div>
+          
+          <div className="flex items-center gap-2 mb-2">
+             <span className="text-sm font-medium">Масштаб (множитель):</span>
+             <input 
+               type="number" 
+               min="0.01" 
+               step="0.1" 
+               className="flex h-9 w-24 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+               value={scaleFactor}
+               onChange={(e) => setScaleFactor(e.target.value)}
+             />
+             <span className="text-xs text-muted-foreground">(например, 2 = увеличить в 2 раза)</span>
           </div>
           
           <Textarea 
