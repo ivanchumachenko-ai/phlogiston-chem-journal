@@ -20,10 +20,11 @@ import { Separator } from "@/components/ui/separator";
 
 import { Textarea } from "@/components/ui/textarea";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { Save, List, History, FileText, Upload, MapPin, ExternalLink, DownloadCloud, Info, ShieldCheck, Database, WifiOff, AlertCircle } from "lucide-react";
+import { Wand2, Save, List, History, FileText, Upload, MapPin, ExternalLink, DownloadCloud, Info, ShieldCheck, Database, WifiOff, AlertCircle } from "lucide-react";
 import { getSavedSyntheses, saveSynthesis, deleteSynthesis, SavedSynthesis, getInventory, saveInventory, InventoryItem, getCustomReagents, saveCustomReagent, deleteCustomReagent, CustomReagent, getGSheetsUrl, saveGSheetsUrl } from "@/lib/storage";
 import React, { useRef } from "react";
 import * as XLSX from "xlsx";
+import { SmartPasteModal } from "@/components/SmartPasteModal";
 
 import { StructureEditor } from "@/components/StructureEditor";
 import { ReactionScheme, ReactionSchemeData } from "@/components/ReactionScheme";
@@ -2035,11 +2036,14 @@ export default function Home() {
                 {t('uiReagentTable')}
                 <Badge variant="secondary" className="ml-2">{entries.length}</Badge>
               </CardTitle>
-              {entries.length > 0 && (
-                <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => setEntries([])}>
-                  {t('headerClear')}
-                </Button>
-              )}
+              <div className="flex items-center gap-2">
+                <SmartPasteModal onAddEntries={(newEntries) => setEntries(prev => [...prev, ...newEntries])} />
+                {entries.length > 0 && (
+                  <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => setEntries([])}>
+                    {t('headerClear')}
+                  </Button>
+                )}
+              </div>
             </div>
             
             <CardContent className="p-0 flex-1 relative">
