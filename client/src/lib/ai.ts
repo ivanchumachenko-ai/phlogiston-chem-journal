@@ -1,10 +1,11 @@
 export async function parseWithFreeAI(text: string): Promise<any[]> {
   const prompt = `
-You are a chemistry assistant. Extract all chemical substances (reagents, solvents, products) from the following experimental procedure text.
+You are a chemistry assistant. Extract ONLY REAL chemical substances (reagents, solvents, products) from the following experimental procedure text.
+DO NOT extract glassware (flask, beaker), equipment, conditions, prepositions ("To a solution of", "was added"), or actions.
 Return ONLY a JSON object with a "chemicals" array. Do not use markdown blocks.
 Each object in the array must have the following exact structure:
 {
-  "name": "chemical name exactly as in text, cleaned up without prepositions",
+  "name": "ONLY the clean chemical name (e.g. 'benzyl bromide', 'DMF', 'K2CO3')",
   "mass": number (amount in mg, g, or kg. or null if none),
   "massUnit": "mg" or "g" (or null if none),
   "volume": number (amount in uL, mL, or L. or null if none),

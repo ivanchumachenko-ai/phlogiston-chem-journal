@@ -67,6 +67,11 @@ export function SmartPasteModal({ onAddEntries }: SmartPasteModalProps) {
 
         const properties = await get_properties_async(name) || undefined;
         
+        // STRICT FILTER: Only accept if we found properties with formula or structure
+        if (!properties?.formula && !properties?.cid && !properties?.smiles) {
+          continue; // Skip this match completely, it's probably garbage
+        }
+        
         const entry: ReagentEntry = {
           id: crypto.randomUUID(),
           nameOrFormula: name,
@@ -117,6 +122,11 @@ export function SmartPasteModal({ onAddEntries }: SmartPasteModalProps) {
         }
 
         const properties = await get_properties_async(name) || undefined;
+
+        // STRICT FILTER: Only accept if we found properties with formula or structure
+        if (!properties?.formula && !properties?.cid && !properties?.smiles) {
+          continue; // Skip this match completely
+        }
 
         const entry: ReagentEntry = {
           id: crypto.randomUUID(),
@@ -176,7 +186,9 @@ export function SmartPasteModal({ onAddEntries }: SmartPasteModalProps) {
       
       const inventory = getInventory();
       
-      const entries: ReagentEntry[] = await Promise.all(aiChemicals.map(async (chem: any) => {
+      const validAiChemicals = aiChemicals.filter((chem: any) => chem && chem.name && typeof chem.name === 'string');
+      
+      const parsedEntries = await Promise.all(validAiChemicals.map(async (chem: any) => {
         const name = String(chem.name || "Unknown");
         
         let massUnit: "mg" | "g" = "mg";
@@ -189,6 +201,11 @@ export function SmartPasteModal({ onAddEntries }: SmartPasteModalProps) {
         if (chem.molesUnit === 'mol') molesUnit = 'mol';
 
         const properties = await get_properties_async(name) || undefined;
+        
+        // STRICT FILTER: Only accept if we found properties with formula or structure
+        if (!properties?.formula && !properties?.cid && !properties?.smiles) {
+          return null; // Return null so we can filter it out later
+        }
         
         const entry: ReagentEntry = {
           id: crypto.randomUUID(),
@@ -222,6 +239,14 @@ export function SmartPasteModal({ onAddEntries }: SmartPasteModalProps) {
         
         return entry;
       }));
+      
+      const entries = parsedEntries.filter((e): e is ReagentEntry => e !== null);
+
+      if (entries.length === 0) {
+        setError("Не удалось распознать вещества или найденный текст — это просто посуда/предлоги. Убедитесь, что текст содержит формат: 'Название (1.5 g, 10 mmol)' или 'Растворитель (20 mL)'.");
+        setIsAiLoading(false);
+        return;
+      }
       
       onAddEntries(entries);
       setOpen(false);
