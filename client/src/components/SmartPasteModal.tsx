@@ -4,25 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Wand2, AlertCircle } from "lucide-react";
 import { ReagentEntry } from "@/lib/export";
-import { t } from "@/lib/i18n";
 import { getInventory } from "@/lib/storage";
 
 interface SmartPasteModalProps {
   onAddEntries: (entries: ReagentEntry[]) => void;
 }
-
-const createEmptyEntry = (): ReagentEntry => ({
-  name: "",
-  formula: "",
-  cas: "",
-  density: "",
-  molarMass: "",
-  amountStr: "",
-  unit: "mg",
-  eqStr: "",
-  mmols: "",
-  notes: ""
-});
 
 export function SmartPasteModal({ onAddEntries }: SmartPasteModalProps) {
   const [open, setOpen] = useState(false);
@@ -33,68 +19,96 @@ export function SmartPasteModal({ onAddEntries }: SmartPasteModalProps) {
     try {
       const inventory = getInventory();
       const entries: ReagentEntry[] = [];
-      const lines = text.split(/\r?\n/).filter(line => line.trim().length > 0);
-      
       const foundReagents: string[] = [];
 
-      // Regex 1: Matches "Name (Amount Unit, Moles mmol)" -> "benzyl bromide (1.71 g, 10.0 mmol)"
-      // The name part takes everything up to the first open parenthesis that is followed by a number
+      // Regex 1: "Name (Amount Unit, Moles mmol)" -> "benzyl bromide (1.71 g, 10.0 mmol)"
       const regexSolid = /([a-zA-Z0-9\-\(\)\s\,\.]+?)\s*\(\s*([\d\.]+)\s*(g|mg|kg|mL|L|μL),\s*([\d\.]+)\s*(mmol|mol)\s*\)/gi;
       
-      // Regex 2: Matches "Name (Amount Unit)" -> "DMF (20 mL)"
+      // Regex 2: "Name (Amount Unit)" -> "DMF (20 mL)"
       const regexSolvent = /([a-zA-Z0-9\-\(\)\s\,\.]+?)\s*\(\s*([\d\.]+)\s*(mL|L|μL)\s*\)/gi;
 
       let match;
       while ((match = regexSolid.exec(text)) !== null) {
         const name = match[1].trim();
-        const amountStr = match[2];
-        const unitStr = match[3];
+        const amount = parseFloat(match[2]);
+        const unitStr = match[3].toLowerCase();
+        const moles = parseFloat(match[4]);
+        const molesUnitStr = match[5].toLowerCase();
         
-        // Check if we already found this (to avoid overlapping regex matches)
         if (foundReagents.includes(name.toLowerCase())) continue;
         foundReagents.push(name.toLowerCase());
 
-        const entry = createEmptyEntry();
-        entry.name = name;
-        entry.amountStr = amountStr;
+        let massUnit: "mg" | "g" = "mg";
+        let finalMass = amount;
         
-        if (unitStr.toLowerCase() === 'g') entry.unit = 'g';
-        else if (unitStr.toLowerCase() === 'mg') entry.unit = 'mg';
-        else if (unitStr.toLowerCase() === 'kg') entry.unit = 'kg';
-        else if (unitStr.toLowerCase() === 'ml') entry.unit = 'mL';
-        else if (unitStr.toLowerCase() === 'l') entry.unit = 'L';
-        else if (unitStr.toLowerCase() === 'μl') entry.unit = 'μL';
+        if (unitStr === 'g') {
+          massUnit = "g";
+        } else if (unitStr === 'kg') {
+          massUnit = "g";
+          finalMass = amount * 1000;
+        }
 
-        // Try to find in inventory to get formula
+        const entry: ReagentEntry = {
+          id: crypto.randomUUID(),
+          nameOrFormula: name,
+          molarMass: 0,
+          mass: finalMass,
+          massUnit: massUnit,
+          moles: moles,
+          molesUnit: molesUnitStr === 'mol' ? 'mol' : 'mmol',
+          properties: {}
+        };
+
         const invItem = inventory.find(i => i.name.toLowerCase() === name.toLowerCase());
         if (invItem) {
-          entry.formula = invItem.formula;
+          entry.molarMass = parseFloat(invItem.molarMass || "0") || 0;
+          if (invItem.formula) entry.nameOrFormula = `${name} (${invItem.formula})`;
+        } else {
+          // Approximate molar mass from mass/moles
+          if (finalMass && moles) {
+            let massInG = massUnit === 'g' ? finalMass : finalMass / 1000;
+            let molesInMol = entry.molesUnit === 'mol' ? moles : moles / 1000;
+            entry.molarMass = massInG / molesInMol;
+          }
         }
 
         entries.push(entry);
       }
 
-      // Reset regex index
       regexSolvent.lastIndex = 0;
       while ((match = regexSolvent.exec(text)) !== null) {
         const name = match[1].trim();
-        const amountStr = match[2];
-        const unitStr = match[3];
+        const amount = parseFloat(match[2]);
+        const unitStr = match[3].toLowerCase();
 
         if (foundReagents.includes(name.toLowerCase())) continue;
         foundReagents.push(name.toLowerCase());
 
-        const entry = createEmptyEntry();
-        entry.name = name;
-        entry.amountStr = amountStr;
+        let volUnit: "uL" | "mL" = "mL";
+        let finalVol = amount;
         
-        if (unitStr.toLowerCase() === 'ml') entry.unit = 'mL';
-        else if (unitStr.toLowerCase() === 'l') entry.unit = 'L';
-        else if (unitStr.toLowerCase() === 'μl') entry.unit = 'μL';
+        if (unitStr === 'μl' || unitStr === 'ul') {
+          volUnit = "uL";
+        } else if (unitStr === 'l') {
+          volUnit = "mL";
+          finalVol = amount * 1000;
+        }
+
+        const entry: ReagentEntry = {
+          id: crypto.randomUUID(),
+          nameOrFormula: name,
+          molarMass: 0,
+          volume: finalVol,
+          massUnit: "mg",
+          molesUnit: "mmol",
+          properties: {}
+        };
 
         const invItem = inventory.find(i => i.name.toLowerCase() === name.toLowerCase());
         if (invItem) {
-          entry.formula = invItem.formula;
+          entry.molarMass = parseFloat(invItem.molarMass || "0") || 0;
+          if (invItem.formula) entry.nameOrFormula = `${name} (${invItem.formula})`;
+          if (invItem.density) entry.density = parseFloat(invItem.density);
         }
 
         entries.push(entry);
