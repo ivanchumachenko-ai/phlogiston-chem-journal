@@ -27,9 +27,21 @@ export function SmartPasteModal({ onAddEntries }: SmartPasteModalProps) {
       // Regex 2: "Name (Amount Unit)" -> "DMF (20 mL)"
       const regexSolvent = /([a-zA-Z0-9\-\(\)\s\,\.]+?)\s*\(\s*([\d\.]+)\s*(mL|L|μL)\s*\)/gi;
 
+      // Helper to extract clean chemical name from a long regex match
+      const extractName = (rawName: string) => {
+        // Split by common English/Russian prepositions used in experimental procedures
+        const parts = rawName.split(/\b(?:of|in|and|with|to|from|using|из|в|с|к|и)\b/i);
+        let name = parts[parts.length - 1].trim();
+        // Remove trailing commas, colons or spaces
+        name = name.replace(/^[\s,:]+|[\s,:]+$/g, '');
+        // If the name is too short (just "a" or something), fallback to the whole thing (unlikely)
+        return name.length > 1 ? name : rawName.trim();
+      };
+
       let match;
       while ((match = regexSolid.exec(text)) !== null) {
-        const name = match[1].trim();
+        const rawName = match[1].trim();
+        const name = extractName(rawName);
         const amount = parseFloat(match[2]);
         const unitStr = match[3].toLowerCase();
         const moles = parseFloat(match[4]);
@@ -77,7 +89,8 @@ export function SmartPasteModal({ onAddEntries }: SmartPasteModalProps) {
 
       regexSolvent.lastIndex = 0;
       while ((match = regexSolvent.exec(text)) !== null) {
-        const name = match[1].trim();
+        const rawName = match[1].trim();
+        const name = extractName(rawName);
         const amount = parseFloat(match[2]);
         const unitStr = match[3].toLowerCase();
 
