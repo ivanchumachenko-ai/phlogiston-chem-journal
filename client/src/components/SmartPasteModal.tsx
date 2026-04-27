@@ -32,10 +32,11 @@ export function SmartPasteModal({ onAddEntries }: SmartPasteModalProps) {
   };
 
   // Fallback to local parsing if AI fails or user chooses it
-  const parseTextLocal = async (isFallback = false) => {
+  const parseTextLocal = async (isFallback: boolean | React.MouseEvent = false) => {
     try {
+      const fallback = isFallback === true;
       cancelledRef.current = false;
-      if (!isFallback) setIsLocalLoading(true);
+      if (!fallback) setIsLocalLoading(true);
       setProgress(10);
       setProgressText("Анализ текста...");
       const inventory = getInventory();
@@ -53,27 +54,34 @@ export function SmartPasteModal({ onAddEntries }: SmartPasteModalProps) {
       const regexSolvent = /([a-zA-Z0-9\-\(\)\s\,\.]+?)\s*\(\s*([\d\.]+)\s*(mL|L|μL|g|mg|kg)\s*\)/gi;
 
       // Helper to find the longest valid chemical name by checking suffixes
-      // Reverted to original left-to-right parsing as requested
+      // Algorithm changed to right-to-left: build from the rightmost word until we hit an invalid word.
       const findLongestValidName = async (rawName: string) => {
         if (cancelledRef.current) return null;
         // Clean trailing punctuation
         let cleanStr = rawName.replace(/^[\s,:]+|[\s,:]+$/g, '');
         const words = cleanStr.split(/\s+/);
         
-        for (let i = 0; i < words.length; i++) {
+        let longestValid = null;
+        let currentStr = "";
+        
+        for (let i = words.length - 1; i >= 0; i--) {
           if (cancelledRef.current) return null;
           
-          const candidate = words.slice(i).join(" ");
-          // Skip if candidate is too short (e.g. just "a" or "of")
-          if (candidate.length < 3 && !/^[A-Z]/.test(candidate)) continue;
+          currentStr = words[i] + (currentStr ? " " + currentStr : "");
+          // Skip if candidate is too short and no valid match yet
+          if (currentStr.length < 3 && !/^[A-Z]/.test(currentStr) && !longestValid) continue;
           
-          const props = await get_properties_async(candidate);
+          const props = await get_properties_async(currentStr);
+          
           // STRICT FILTER: Accept if we found properties with formula or structure
           if (props && (props.formula || props.cid || props.smiles)) {
-            return { name: candidate, properties: props };
+            longestValid = { name: currentStr, properties: props };
+          } else if (longestValid) {
+            // If we already found a valid suffix (e.g. "benzyl bromide"), but adding the next word ("of benzyl bromide") makes it invalid, STOP and return the valid one.
+            break;
           }
         }
-        return null;
+        return longestValid;
       };
 
       const scale = parseFloat(scaleFactor) || 1;
@@ -259,7 +267,8 @@ export function SmartPasteModal({ onAddEntries }: SmartPasteModalProps) {
       if (cancelledRef.current) return;
       setError(e.message || "Ошибка локального распознавания");
     } finally {
-      if (!isFallback) setIsLocalLoading(false);
+      const fallback = isFallback === true;
+      if (!fallback) setIsLocalLoading(false);
     }
   };
 
