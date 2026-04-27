@@ -18,12 +18,16 @@ export function SmartPasteModal({ onAddEntries }: SmartPasteModalProps) {
   const [error, setError] = useState("");
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [isLocalLoading, setIsLocalLoading] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [progressText, setProgressText] = useState("");
   const [scaleFactor, setScaleFactor] = useState<string>("1");
 
   // Fallback to local parsing if AI fails or user chooses it
   const parseTextLocal = async () => {
     try {
       setIsLocalLoading(true);
+      setProgress(10);
+      setProgressText("Анализ текста...");
       const inventory = getInventory();
       const entries: ReagentEntry[] = [];
       const foundReagents: string[] = [];
@@ -230,12 +234,15 @@ export function SmartPasteModal({ onAddEntries }: SmartPasteModalProps) {
     
     setIsAiLoading(true);
     setError("");
+    setProgress(10);
+    setProgressText("Анализ текста через AI...");
     
     try {
       const aiChemicals = await parseWithFreeAI(text);
       
       if (!aiChemicals || aiChemicals.length === 0) {
         // Fallback to local parsing
+        setProgressText("Переход к локальному распознаванию...");
         parseTextLocal();
         setIsAiLoading(false);
         return;
@@ -244,33 +251,16 @@ export function SmartPasteModal({ onAddEntries }: SmartPasteModalProps) {
       const inventory = getInventory();
       const scale = parseFloat(scaleFactor) || 1;
       
-      // Deduplicate AI results by name to prevent multiple identical entries
-      const uniqueAiChemicals = new Map();
-      aiChemicals.forEach((chem: any) => {
-        if (chem && chem.name && typeof chem.name === 'string') {
-          const lowerName = chem.name.toLowerCase();
-          if (uniqueAiChemicals.has(lowerName)) {
-            // If duplicate exists, optionally sum the amounts (keep it simple for now, just sum mass and moles if they exist)
-            const existing = uniqueAiChemicals.get(lowerName);
-            if (typeof chem.mass === 'number' && typeof existing.mass === 'number' && chem.massUnit === existing.massUnit) {
-              existing.mass += chem.mass;
-            }
-            if (typeof chem.volume === 'number' && typeof existing.volume === 'number' && chem.volumeUnit === existing.volumeUnit) {
-              existing.volume += chem.volume;
-            }
-            if (typeof chem.moles === 'number' && typeof existing.moles === 'number' && chem.molesUnit === existing.molesUnit) {
-              existing.moles += chem.moles;
-            }
-          } else {
-            uniqueAiChemicals.set(lowerName, { ...chem });
-          }
-        }
-      });
+      const validAiChemicals = aiChemicals.filter((chem: any) => chem && chem.name && typeof chem.name === 'string');
       
-      const validAiChemicals = Array.from(uniqueAiChemicals.values());
+      setProgress(50);
       
-      const parsedEntries = await Promise.all(validAiChemicals.map(async (chem: any) => {
+      const parsedEntries: (ReagentEntry | null)[] = [];
+      
+      for (let i = 0; i < validAiChemicals.length; i++) {
+        const chem = validAiChemicals[i];
         const name = String(chem.name || "Unknown");
+        setProgressText(`Поиск свойств для: ${name} (${i + 1}/${validAiChemicals.length})`);
         
         let massUnit: "mg" | "g" = "mg";
         if (chem.massUnit === 'g') massUnit = 'g';
@@ -285,7 +275,8 @@ export function SmartPasteModal({ onAddEntries }: SmartPasteModalProps) {
         
         // STRICT FILTER: Only accept if we found properties with formula or structure
         if (!properties?.formula && !properties?.cid && !properties?.smiles) {
-          return null; // Return null so we can filter it out later
+          parsedEntries.push(null);
+          continue;
         }
         
         const mass = typeof chem.mass === 'number' ? chem.mass * scale : undefined;
@@ -322,8 +313,9 @@ export function SmartPasteModal({ onAddEntries }: SmartPasteModalProps) {
           }
         }
         
-        return entry;
-      }));
+        parsedEntries.push(entry);
+        setProgress(50 + Math.round(((i + 1) / validAiChemicals.length) * 50));
+      }
       
       const entries = parsedEntries.filter((e): e is ReagentEntry => e !== null);
 
@@ -338,9 +330,11 @@ export function SmartPasteModal({ onAddEntries }: SmartPasteModalProps) {
       setText("");
       setError("");
       setScaleFactor("1");
+      setProgress(0);
     } catch (e: any) {
       console.error("AI parse error:", e);
-      setError("Ошибка AI распознавания: " + (e.message || "попробуйте обычный парсинг."));
+      // Fallback to local parsing on AI error
+      parseTextLocal();
     } finally {
       setIsAiLoading(false);
     }
@@ -398,6 +392,21 @@ export function SmartPasteModal({ onAddEntries }: SmartPasteModalProps) {
             <div className="flex items-start gap-2 text-destructive text-sm bg-destructive/10 p-2 rounded">
               <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
               <p>{error}</p>
+            </div>
+          )}
+
+          {(isAiLoading || isLocalLoading) && (
+            <div className="space-y-2 p-3 bg-muted/50 rounded-md">
+              <div className="flex justify-between text-xs font-medium text-muted-foreground">
+                <span>{progressText || "Распознавание..."}</span>
+                <span>{progress}%</span>
+              </div>
+              <div className="h-2 bg-secondary rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-primary transition-all duration-300 ease-in-out" 
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
             </div>
           )}
         </div>
