@@ -17,12 +17,13 @@ export function SmartPasteModal({ onAddEntries }: SmartPasteModalProps) {
   const [text, setText] = useState("");
   const [error, setError] = useState("");
   const [isAiLoading, setIsAiLoading] = useState(false);
+  const [isLocalLoading, setIsLocalLoading] = useState(false);
   const [scaleFactor, setScaleFactor] = useState<string>("1");
 
   // Fallback to local parsing if AI fails or user chooses it
   const parseTextLocal = async () => {
     try {
-      setIsAiLoading(true);
+      setIsLocalLoading(true);
       const inventory = getInventory();
       const entries: ReagentEntry[] = [];
       const foundReagents: string[] = [];
@@ -208,7 +209,7 @@ export function SmartPasteModal({ onAddEntries }: SmartPasteModalProps) {
 
       if (entries.length === 0) {
         setError("Не удалось распознать вещества. Убедитесь, что текст содержит формат: 'Название (1.5 g, 10 mmol)' или 'Растворитель (20 mL)'.");
-        setIsAiLoading(false);
+        setIsLocalLoading(false);
         return;
       }
 
@@ -220,7 +221,7 @@ export function SmartPasteModal({ onAddEntries }: SmartPasteModalProps) {
     } catch (e: any) {
       setError(e.message || "Ошибка локального распознавания");
     } finally {
-      setIsAiLoading(false);
+      setIsLocalLoading(false);
     }
   };
 
@@ -243,7 +244,30 @@ export function SmartPasteModal({ onAddEntries }: SmartPasteModalProps) {
       const inventory = getInventory();
       const scale = parseFloat(scaleFactor) || 1;
       
-      const validAiChemicals = aiChemicals.filter((chem: any) => chem && chem.name && typeof chem.name === 'string');
+      // Deduplicate AI results by name to prevent multiple identical entries
+      const uniqueAiChemicals = new Map();
+      aiChemicals.forEach((chem: any) => {
+        if (chem && chem.name && typeof chem.name === 'string') {
+          const lowerName = chem.name.toLowerCase();
+          if (uniqueAiChemicals.has(lowerName)) {
+            // If duplicate exists, optionally sum the amounts (keep it simple for now, just sum mass and moles if they exist)
+            const existing = uniqueAiChemicals.get(lowerName);
+            if (typeof chem.mass === 'number' && typeof existing.mass === 'number' && chem.massUnit === existing.massUnit) {
+              existing.mass += chem.mass;
+            }
+            if (typeof chem.volume === 'number' && typeof existing.volume === 'number' && chem.volumeUnit === existing.volumeUnit) {
+              existing.volume += chem.volume;
+            }
+            if (typeof chem.moles === 'number' && typeof existing.moles === 'number' && chem.molesUnit === existing.molesUnit) {
+              existing.moles += chem.moles;
+            }
+          } else {
+            uniqueAiChemicals.set(lowerName, { ...chem });
+          }
+        }
+      });
+      
+      const validAiChemicals = Array.from(uniqueAiChemicals.values());
       
       const parsedEntries = await Promise.all(validAiChemicals.map(async (chem: any) => {
         const name = String(chem.name || "Unknown");
@@ -316,8 +340,7 @@ export function SmartPasteModal({ onAddEntries }: SmartPasteModalProps) {
       setScaleFactor("1");
     } catch (e: any) {
       console.error("AI parse error:", e);
-      // Fallback to local parsing on AI error
-      parseTextLocal();
+      setError("Ошибка AI распознавания: " + (e.message || "попробуйте обычный парсинг."));
     } finally {
       setIsAiLoading(false);
     }
@@ -380,20 +403,26 @@ export function SmartPasteModal({ onAddEntries }: SmartPasteModalProps) {
         </div>
         
         <DialogFooter className="flex-col sm:flex-row gap-2">
-          <Button variant="secondary" onClick={() => setOpen(false)} disabled={isAiLoading}>Отмена</Button>
+          <Button type="button" variant="secondary" onClick={() => setOpen(false)} disabled={isAiLoading || isLocalLoading}>Отмена</Button>
           <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
             <Button 
+              type="button"
               variant="outline"
               onClick={parseTextLocal} 
-              disabled={!text.trim() || isAiLoading} 
+              disabled={!text.trim() || isAiLoading || isLocalLoading} 
               className="gap-2"
             >
-              <Wand2 className="w-4 h-4" />
+              {isLocalLoading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Wand2 className="w-4 h-4" />
+              )}
               Обычный парсинг
             </Button>
             <Button 
+              type="button"
               onClick={parseTextAI} 
-              disabled={!text.trim() || isAiLoading} 
+              disabled={!text.trim() || isAiLoading || isLocalLoading} 
               className="gap-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white border-0"
             >
               {isAiLoading ? (
