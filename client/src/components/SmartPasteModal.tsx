@@ -3,13 +3,26 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Wand2, AlertCircle } from "lucide-react";
-import { ReagentEntry, getDefaultEntry } from "@/lib/export";
+import { ReagentEntry } from "@/lib/export";
 import { t } from "@/lib/i18n";
 import { getInventory } from "@/lib/storage";
 
 interface SmartPasteModalProps {
   onAddEntries: (entries: ReagentEntry[]) => void;
 }
+
+const createEmptyEntry = (): ReagentEntry => ({
+  name: "",
+  formula: "",
+  cas: "",
+  density: "",
+  molarMass: "",
+  amountStr: "",
+  unit: "mg",
+  eqStr: "",
+  mmols: "",
+  notes: ""
+});
 
 export function SmartPasteModal({ onAddEntries }: SmartPasteModalProps) {
   const [open, setOpen] = useState(false);
@@ -41,7 +54,7 @@ export function SmartPasteModal({ onAddEntries }: SmartPasteModalProps) {
         if (foundReagents.includes(name.toLowerCase())) continue;
         foundReagents.push(name.toLowerCase());
 
-        const entry = getDefaultEntry();
+        const entry = createEmptyEntry();
         entry.name = name;
         entry.amountStr = amountStr;
         
@@ -71,7 +84,7 @@ export function SmartPasteModal({ onAddEntries }: SmartPasteModalProps) {
         if (foundReagents.includes(name.toLowerCase())) continue;
         foundReagents.push(name.toLowerCase());
 
-        const entry = getDefaultEntry();
+        const entry = createEmptyEntry();
         entry.name = name;
         entry.amountStr = amountStr;
         
