@@ -37,15 +37,24 @@ export function SmartPasteModal({ onAddEntries }: SmartPasteModalProps) {
       // Regex 2: "Name (Amount Unit)" -> "DMF (20 mL)"
       const regexSolvent = /([a-zA-Z0-9\-\(\)\s\,\.]+?)\s*\(\s*([\d\.]+)\s*(mL|L|μL|g|mg|kg)\s*\)/gi;
 
-      // Helper to extract clean chemical name from a long regex match
-      const extractName = (rawName: string) => {
-        // Split by common English/Russian prepositions used in experimental procedures
-        const parts = rawName.split(/\b(?:of|in|and|with|to|from|using|из|в|с|к|и)\b/i);
-        let name = parts[parts.length - 1].trim();
-        // Remove trailing commas, colons or spaces
-        name = name.replace(/^[\s,:]+|[\s,:]+$/g, '');
-        // If the name is too short (just "a" or something), fallback to the whole thing (unlikely)
-        return name.length > 1 ? name : rawName.trim();
+      // Helper to find the longest valid chemical name by checking suffixes
+      const findLongestValidName = async (rawName: string) => {
+        // Clean trailing punctuation
+        let cleanStr = rawName.replace(/^[\s,:]+|[\s,:]+$/g, '');
+        const words = cleanStr.split(/\s+/);
+        
+        for (let i = 0; i < words.length; i++) {
+          const candidate = words.slice(i).join(" ");
+          // Skip if candidate is too short (e.g. just "a" or "of")
+          if (candidate.length < 3 && !/^[A-Z]/.test(candidate)) continue;
+          
+          const props = await get_properties_async(candidate);
+          // STRICT FILTER: Accept if we found properties with formula or structure
+          if (props && (props.formula || props.cid || props.smiles)) {
+            return { name: candidate, properties: props };
+          }
+        }
+        return null;
       };
 
       const scale = parseFloat(scaleFactor) || 1;
@@ -53,7 +62,10 @@ export function SmartPasteModal({ onAddEntries }: SmartPasteModalProps) {
       let match;
       while ((match = regexSolid.exec(text)) !== null) {
         const rawName = match[1].trim();
-        const name = extractName(rawName);
+        const validMatch = await findLongestValidName(rawName);
+        if (!validMatch) continue; // Skip garbage
+        
+        const { name, properties } = validMatch;
         const amount = parseFloat(match[2]) * scale;
         const unitStr = match[3].toLowerCase();
         const moles = parseFloat(match[4]) * scale;
@@ -71,32 +83,25 @@ export function SmartPasteModal({ onAddEntries }: SmartPasteModalProps) {
           massUnit = "g";
           finalMass = amount * 1000;
         }
-
-        const properties = await get_properties_async(name) || undefined;
-        
-        // STRICT FILTER: Only accept if we found properties with formula or structure
-        if (!properties?.formula && !properties?.cid && !properties?.smiles) {
-          continue; // Skip this match completely, it's probably garbage
-        }
         
         const entry: ReagentEntry = {
           id: crypto.randomUUID(),
           nameOrFormula: name,
-          molarMass: properties?.mw || 0,
+          molarMass: properties.mw || 0,
           mass: finalMass,
           massUnit: massUnit,
           moles: moles,
           molesUnit: molesUnitStr === 'mol' ? 'mol' : 'mmol',
           isReference: false,
           properties: properties || null,
-          molfile: properties?.molfile,
-          structureSource: properties?.cid ? "pubchem" : properties?.smiles ? "local-smiles" : undefined
+          molfile: properties.molfile,
+          structureSource: properties.cid ? "pubchem" : properties.smiles ? "local-smiles" : undefined
         };
 
         const invItem = inventory.find(i => i.name.toLowerCase() === name.toLowerCase());
         if (invItem) {
-          if (invItem.formula && !properties?.formula) entry.nameOrFormula = `${name} (${invItem.formula})`;
-        } else if (!properties?.mw) {
+          if (invItem.formula && !properties.formula) entry.nameOrFormula = `${name} (${invItem.formula})`;
+        } else if (!properties.mw) {
           // Approximate molar mass from mass/moles
           if (finalMass && moles) {
             let massInG = massUnit === 'g' ? finalMass : finalMass / 1000;
@@ -111,7 +116,10 @@ export function SmartPasteModal({ onAddEntries }: SmartPasteModalProps) {
       regexSolidInverted.lastIndex = 0;
       while ((match = regexSolidInverted.exec(text)) !== null) {
         const rawName = match[1].trim();
-        const name = extractName(rawName);
+        const validMatch = await findLongestValidName(rawName);
+        if (!validMatch) continue;
+        
+        const { name, properties } = validMatch;
         const moles = parseFloat(match[2]) * scale;
         const molesUnitStr = match[3].toLowerCase();
         const amount = parseFloat(match[4]) * scale;
@@ -129,31 +137,24 @@ export function SmartPasteModal({ onAddEntries }: SmartPasteModalProps) {
           massUnit = "g";
           finalMass = amount * 1000;
         }
-
-        const properties = await get_properties_async(name) || undefined;
-        
-        // STRICT FILTER: Only accept if we found properties with formula or structure
-        if (!properties?.formula && !properties?.cid && !properties?.smiles) {
-          continue; // Skip this match completely, it's probably garbage
-        }
         
         const entry: ReagentEntry = {
           id: crypto.randomUUID(),
           nameOrFormula: name,
-          molarMass: properties?.mw || 0,
+          molarMass: properties.mw || 0,
           mass: finalMass,
           massUnit: massUnit,
           moles: moles,
           molesUnit: molesUnitStr === 'mol' ? 'mol' : 'mmol',
           isReference: false,
           properties: properties || null,
-          molfile: properties?.molfile,
-          structureSource: properties?.cid ? "pubchem" : properties?.smiles ? "local-smiles" : undefined
+          molfile: properties.molfile,
+          structureSource: properties.cid ? "pubchem" : properties.smiles ? "local-smiles" : undefined
         };
 
         const invItem = inventory.find(i => i.name.toLowerCase() === name.toLowerCase());
         if (invItem) {
-          if (invItem.formula && !properties?.formula) entry.nameOrFormula = `${name} (${invItem.formula})`;
+          if (invItem.formula && !properties.formula) entry.nameOrFormula = `${name} (${invItem.formula})`;
         }
 
         entries.push(entry);
@@ -162,7 +163,10 @@ export function SmartPasteModal({ onAddEntries }: SmartPasteModalProps) {
       regexSolvent.lastIndex = 0;
       while ((match = regexSolvent.exec(text)) !== null) {
         const rawName = match[1].trim();
-        const name = extractName(rawName);
+        const validMatch = await findLongestValidName(rawName);
+        if (!validMatch) continue;
+        
+        const { name, properties } = validMatch;
         const amount = parseFloat(match[2]) * scale;
         const unitStr = match[3].toLowerCase();
 
@@ -179,31 +183,24 @@ export function SmartPasteModal({ onAddEntries }: SmartPasteModalProps) {
           finalVol = amount * 1000;
         }
 
-        const properties = await get_properties_async(name) || undefined;
-
-        // STRICT FILTER: Only accept if we found properties with formula or structure
-        if (!properties?.formula && !properties?.cid && !properties?.smiles) {
-          continue; // Skip this match completely
-        }
-
         const entry: ReagentEntry = {
           id: crypto.randomUUID(),
           nameOrFormula: name,
-          molarMass: properties?.mw || 0,
+          molarMass: properties.mw || 0,
           volume: finalVol,
           massUnit: "mg",
           molesUnit: "mmol",
           isReference: false,
-          density: properties?.density,
+          density: properties.density,
           properties: properties || null,
-          molfile: properties?.molfile,
-          structureSource: properties?.cid ? "pubchem" : properties?.smiles ? "local-smiles" : undefined
+          molfile: properties.molfile,
+          structureSource: properties.cid ? "pubchem" : properties.smiles ? "local-smiles" : undefined
         };
 
         const invItem = inventory.find(i => i.name.toLowerCase() === name.toLowerCase());
         if (invItem) {
-          if (invItem.formula && !properties?.formula) entry.nameOrFormula = `${name} (${invItem.formula})`;
-          if (invItem.density && !properties?.density) entry.density = parseFloat(invItem.density);
+          if (invItem.formula && !properties.formula) entry.nameOrFormula = `${name} (${invItem.formula})`;
+          if (invItem.density && !properties.density) entry.density = parseFloat(invItem.density);
         }
 
         entries.push(entry);
