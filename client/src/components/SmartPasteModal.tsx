@@ -6,6 +6,7 @@ import { Wand2, AlertCircle, Sparkles, Loader2 } from "lucide-react";
 import { ReagentEntry } from "@/lib/export";
 import { getInventory } from "@/lib/storage";
 import { parseWithFreeAI } from "@/lib/ai";
+import { get_properties_async } from "@/lib/chemistry";
 
 interface SmartPasteModalProps {
   onAddEntries: (entries: ReagentEntry[]) => void;
@@ -18,8 +19,9 @@ export function SmartPasteModal({ onAddEntries }: SmartPasteModalProps) {
   const [isAiLoading, setIsAiLoading] = useState(false);
 
   // Fallback to local parsing if AI fails or user chooses it
-  const parseTextLocal = () => {
+  const parseTextLocal = async () => {
     try {
+      setIsAiLoading(true);
       const inventory = getInventory();
       const entries: ReagentEntry[] = [];
       const foundReagents: string[] = [];
@@ -63,22 +65,26 @@ export function SmartPasteModal({ onAddEntries }: SmartPasteModalProps) {
           finalMass = amount * 1000;
         }
 
+        const properties = await get_properties_async(name) || undefined;
+        
         const entry: ReagentEntry = {
           id: crypto.randomUUID(),
           nameOrFormula: name,
-          molarMass: 0,
+          molarMass: properties?.mw || 0,
           mass: finalMass,
           massUnit: massUnit,
           moles: moles,
           molesUnit: molesUnitStr === 'mol' ? 'mol' : 'mmol',
-          properties: {}
+          isReference: false,
+          properties: properties || null,
+          molfile: properties?.molfile,
+          structureSource: properties?.cid ? "pubchem" : properties?.smiles ? "local-smiles" : undefined
         };
 
         const invItem = inventory.find(i => i.name.toLowerCase() === name.toLowerCase());
         if (invItem) {
-          entry.molarMass = parseFloat(invItem.molarMass || "0") || 0;
-          if (invItem.formula) entry.nameOrFormula = `${name} (${invItem.formula})`;
-        } else {
+          if (invItem.formula && !properties?.formula) entry.nameOrFormula = `${name} (${invItem.formula})`;
+        } else if (!properties?.mw) {
           // Approximate molar mass from mass/moles
           if (finalMass && moles) {
             let massInG = massUnit === 'g' ? finalMass : finalMass / 1000;
@@ -110,21 +116,26 @@ export function SmartPasteModal({ onAddEntries }: SmartPasteModalProps) {
           finalVol = amount * 1000;
         }
 
+        const properties = await get_properties_async(name) || undefined;
+
         const entry: ReagentEntry = {
           id: crypto.randomUUID(),
           nameOrFormula: name,
-          molarMass: 0,
+          molarMass: properties?.mw || 0,
           volume: finalVol,
           massUnit: "mg",
           molesUnit: "mmol",
-          properties: {}
+          isReference: false,
+          density: properties?.density,
+          properties: properties || null,
+          molfile: properties?.molfile,
+          structureSource: properties?.cid ? "pubchem" : properties?.smiles ? "local-smiles" : undefined
         };
 
         const invItem = inventory.find(i => i.name.toLowerCase() === name.toLowerCase());
         if (invItem) {
-          entry.molarMass = parseFloat(invItem.molarMass || "0") || 0;
-          if (invItem.formula) entry.nameOrFormula = `${name} (${invItem.formula})`;
-          if (invItem.density) entry.density = parseFloat(invItem.density);
+          if (invItem.formula && !properties?.formula) entry.nameOrFormula = `${name} (${invItem.formula})`;
+          if (invItem.density && !properties?.density) entry.density = parseFloat(invItem.density);
         }
 
         entries.push(entry);
@@ -132,6 +143,7 @@ export function SmartPasteModal({ onAddEntries }: SmartPasteModalProps) {
 
       if (entries.length === 0) {
         setError("Не удалось распознать вещества. Убедитесь, что текст содержит формат: 'Название (1.5 g, 10 mmol)' или 'Растворитель (20 mL)'.");
+        setIsAiLoading(false);
         return;
       }
 
@@ -141,6 +153,8 @@ export function SmartPasteModal({ onAddEntries }: SmartPasteModalProps) {
       setError("");
     } catch (e: any) {
       setError(e.message || "Ошибка локального распознавания");
+    } finally {
+      setIsAiLoading(false);
     }
   };
 
@@ -161,9 +175,8 @@ export function SmartPasteModal({ onAddEntries }: SmartPasteModalProps) {
       }
       
       const inventory = getInventory();
-      const entries: ReagentEntry[] = [];
       
-      aiChemicals.forEach((chem: any) => {
+      const entries: ReagentEntry[] = await Promise.all(aiChemicals.map(async (chem: any) => {
         const name = String(chem.name || "Unknown");
         
         let massUnit: "mg" | "g" = "mg";
@@ -174,27 +187,31 @@ export function SmartPasteModal({ onAddEntries }: SmartPasteModalProps) {
         
         let molesUnit: "mmol" | "mol" = "mmol";
         if (chem.molesUnit === 'mol') molesUnit = 'mol';
+
+        const properties = await get_properties_async(name) || undefined;
         
         const entry: ReagentEntry = {
           id: crypto.randomUUID(),
           nameOrFormula: name,
-          molarMass: 0,
+          molarMass: properties?.mw || 0,
           mass: typeof chem.mass === 'number' ? chem.mass : undefined,
           massUnit,
           volume: typeof chem.volume === 'number' ? chem.volume : undefined,
           volumeUnit: volUnit,
           moles: typeof chem.moles === 'number' ? chem.moles : undefined,
           molesUnit,
-          properties: {}
+          isReference: false,
+          properties: properties || null,
+          molfile: properties?.molfile,
+          structureSource: properties?.cid ? "pubchem" : properties?.smiles ? "local-smiles" : undefined
         };
         
         // Try to match with inventory
         const invItem = inventory.find(i => i.name.toLowerCase() === name.toLowerCase());
         if (invItem) {
-          entry.molarMass = parseFloat(invItem.molarMass || "0") || 0;
-          if (invItem.formula) entry.nameOrFormula = `${name} (${invItem.formula})`;
-          if (invItem.density) entry.density = parseFloat(invItem.density);
-        } else if (entry.mass && entry.moles) {
+          if (invItem.formula && !properties?.formula) entry.nameOrFormula = `${name} (${invItem.formula})`;
+          if (invItem.density && !properties?.density) entry.density = parseFloat(invItem.density);
+        } else if (!properties?.mw && entry.mass && entry.moles) {
           // Approximate molar mass
           let massInG = entry.massUnit === 'g' ? entry.mass : entry.mass / 1000;
           let molesInMol = entry.molesUnit === 'mol' ? entry.moles : entry.moles / 1000;
@@ -203,8 +220,8 @@ export function SmartPasteModal({ onAddEntries }: SmartPasteModalProps) {
           }
         }
         
-        entries.push(entry);
-      });
+        return entry;
+      }));
       
       onAddEntries(entries);
       setOpen(false);
