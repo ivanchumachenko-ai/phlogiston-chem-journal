@@ -19,6 +19,7 @@ Important Rules:
 - If a substance only has mass/moles, volume must be null.
 - Never invent amounts. If an amount is missing, use null.
 - Convert kg to g (multiply by 1000). Convert L to mL (multiply by 1000).
+- Expand common chemical abbreviations into their full names (e.g., "EtOAc" -> "Ethyl acetate", "DCM" -> "Dichloromethane", "MeOH" -> "Methanol", "EtOH" -> "Ethanol", "DMF" -> "Dimethylformamide", "THF" -> "Tetrahydrofuran"). This helps match them against databases.
 
 Text:
 "${text}"

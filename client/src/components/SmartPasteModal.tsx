@@ -28,10 +28,14 @@ export function SmartPasteModal({ onAddEntries }: SmartPasteModalProps) {
       const foundReagents: string[] = [];
 
       // Regex 1: "Name (Amount Unit, Moles mmol)" -> "benzyl bromide (1.71 g, 10.0 mmol)"
-      const regexSolid = /([a-zA-Z0-9\-\(\)\s\,\.]+?)\s*\(\s*([\d\.]+)\s*(g|mg|kg|mL|L|μL),\s*([\d\.]+)\s*(mmol|mol)\s*\)/gi;
+      // Allows comma, semicolon, or "and" as separator.
+      const regexSolid = /([a-zA-Z0-9\-\(\)\s\,\.]+?)\s*\(\s*([\d\.]+)\s*(g|mg|kg|mL|L|μL)(?:[,;]|\s+and|\s+)\s*([\d\.]+)\s*(mmol|mol)\s*\)/gi;
+      
+      // Regex 1b: Inverted order "Name (Moles mmol, Amount Unit)"
+      const regexSolidInverted = /([a-zA-Z0-9\-\(\)\s\,\.]+?)\s*\(\s*([\d\.]+)\s*(mmol|mol)(?:[,;]|\s+and|\s+)\s*([\d\.]+)\s*(g|mg|kg|mL|L|μL)\s*\)/gi;
       
       // Regex 2: "Name (Amount Unit)" -> "DMF (20 mL)"
-      const regexSolvent = /([a-zA-Z0-9\-\(\)\s\,\.]+?)\s*\(\s*([\d\.]+)\s*(mL|L|μL)\s*\)/gi;
+      const regexSolvent = /([a-zA-Z0-9\-\(\)\s\,\.]+?)\s*\(\s*([\d\.]+)\s*(mL|L|μL|g|mg|kg)\s*\)/gi;
 
       // Helper to extract clean chemical name from a long regex match
       const extractName = (rawName: string) => {
@@ -99,6 +103,57 @@ export function SmartPasteModal({ onAddEntries }: SmartPasteModalProps) {
             let molesInMol = entry.molesUnit === 'mol' ? moles : moles / 1000;
             entry.molarMass = massInG / molesInMol;
           }
+        }
+
+        entries.push(entry);
+      }
+
+      regexSolidInverted.lastIndex = 0;
+      while ((match = regexSolidInverted.exec(text)) !== null) {
+        const rawName = match[1].trim();
+        const name = extractName(rawName);
+        const moles = parseFloat(match[2]) * scale;
+        const molesUnitStr = match[3].toLowerCase();
+        const amount = parseFloat(match[4]) * scale;
+        const unitStr = match[5].toLowerCase();
+        
+        if (foundReagents.includes(name.toLowerCase())) continue;
+        foundReagents.push(name.toLowerCase());
+
+        let massUnit: "mg" | "g" = "mg";
+        let finalMass = amount;
+        
+        if (unitStr === 'g') {
+          massUnit = "g";
+        } else if (unitStr === 'kg') {
+          massUnit = "g";
+          finalMass = amount * 1000;
+        }
+
+        const properties = await get_properties_async(name) || undefined;
+        
+        // STRICT FILTER: Only accept if we found properties with formula or structure
+        if (!properties?.formula && !properties?.cid && !properties?.smiles) {
+          continue; // Skip this match completely, it's probably garbage
+        }
+        
+        const entry: ReagentEntry = {
+          id: crypto.randomUUID(),
+          nameOrFormula: name,
+          molarMass: properties?.mw || 0,
+          mass: finalMass,
+          massUnit: massUnit,
+          moles: moles,
+          molesUnit: molesUnitStr === 'mol' ? 'mol' : 'mmol',
+          isReference: false,
+          properties: properties || null,
+          molfile: properties?.molfile,
+          structureSource: properties?.cid ? "pubchem" : properties?.smiles ? "local-smiles" : undefined
+        };
+
+        const invItem = inventory.find(i => i.name.toLowerCase() === name.toLowerCase());
+        if (invItem) {
+          if (invItem.formula && !properties?.formula) entry.nameOrFormula = `${name} (${invItem.formula})`;
         }
 
         entries.push(entry);
