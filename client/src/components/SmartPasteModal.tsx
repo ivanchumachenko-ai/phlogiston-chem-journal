@@ -32,10 +32,10 @@ export function SmartPasteModal({ onAddEntries }: SmartPasteModalProps) {
   };
 
   // Fallback to local parsing if AI fails or user chooses it
-  const parseTextLocal = async () => {
+  const parseTextLocal = async (isFallback = false) => {
     try {
       cancelledRef.current = false;
-      setIsLocalLoading(true);
+      if (!isFallback) setIsLocalLoading(true);
       setProgress(10);
       setProgressText("Анализ текста...");
       const inventory = getInventory();
@@ -93,6 +93,9 @@ export function SmartPasteModal({ onAddEntries }: SmartPasteModalProps) {
         const validMatch = await findLongestValidName(rawName);
         if (!validMatch) continue; // Skip garbage
         
+        setProgress(p => Math.min(95, p + 10));
+        setProgressText(`Обработка: ${validMatch.name}`);
+        
         const { name, properties } = validMatch;
         const amount = parseFloat(match[2]) * scale;
         const unitStr = match[3].toLowerCase();
@@ -148,6 +151,9 @@ export function SmartPasteModal({ onAddEntries }: SmartPasteModalProps) {
         const validMatch = await findLongestValidName(rawName);
         if (!validMatch) continue;
         
+        setProgress(p => Math.min(95, p + 10));
+        setProgressText(`Обработка: ${validMatch.name}`);
+        
         const { name, properties } = validMatch;
         const moles = parseFloat(match[2]) * scale;
         const molesUnitStr = match[3].toLowerCase();
@@ -196,6 +202,9 @@ export function SmartPasteModal({ onAddEntries }: SmartPasteModalProps) {
         const validMatch = await findLongestValidName(rawName);
         if (!validMatch) continue;
         
+        setProgress(p => Math.min(95, p + 10));
+        setProgressText(`Обработка: ${validMatch.name}`);
+        
         const { name, properties } = validMatch;
         const amount = parseFloat(match[2]) * scale;
         const unitStr = match[3].toLowerCase();
@@ -242,15 +251,22 @@ export function SmartPasteModal({ onAddEntries }: SmartPasteModalProps) {
         return;
       }
 
+      // Wait a tiny bit so user sees 100%
+      setProgress(100);
+      setProgressText("Готово!");
+      await new Promise(r => setTimeout(r, 500));
+      
       onAddEntries(entries, text);
       setOpen(false);
       setText("");
       setError("");
       setScaleFactor("1");
+      setProgress(0);
     } catch (e: any) {
+      if (cancelledRef.current) return;
       setError(e.message || "Ошибка локального распознавания");
     } finally {
-      setIsLocalLoading(false);
+      if (!isFallback) setIsLocalLoading(false);
     }
   };
 
@@ -280,7 +296,7 @@ export function SmartPasteModal({ onAddEntries }: SmartPasteModalProps) {
       if (!aiChemicals || aiChemicals.length === 0) {
         // Fallback to local parsing
         setProgressText("Переход к локальному распознаванию...");
-        parseTextLocal();
+        await parseTextLocal(true);
         setIsAiLoading(false);
         return;
       }
@@ -363,6 +379,11 @@ export function SmartPasteModal({ onAddEntries }: SmartPasteModalProps) {
         return;
       }
       
+      // Wait a tiny bit so user sees 100%
+      setProgress(100);
+      setProgressText("Готово!");
+      await new Promise(r => setTimeout(r, 500));
+      
       onAddEntries(entries, text);
       setOpen(false);
       setText("");
@@ -373,7 +394,8 @@ export function SmartPasteModal({ onAddEntries }: SmartPasteModalProps) {
       if (cancelledRef.current) return;
       console.error("AI parse error:", e);
       // Fallback to local parsing on AI error
-      parseTextLocal();
+      setProgressText("Переход к локальному распознаванию...");
+      await parseTextLocal(true);
     } finally {
       setIsAiLoading(false);
     }
