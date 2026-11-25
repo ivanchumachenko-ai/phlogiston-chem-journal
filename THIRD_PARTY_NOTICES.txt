@@ -1,0 +1,54 @@
+Phlogiston — Third-party notices
+================================
+
+Phlogiston is created and maintained by Ivan Chumachenko. The LICENSE file
+contains the MIT license for Phlogiston. Third-party components and data
+are subject to their respective terms.
+
+Bundled components
+------------------
+
+Ketcher 3.12.0 — Apache License 2.0
+Copyright (C) 2018 EPAM Systems. Includes software developed at EPAM Systems, Inc.
+See licenses/Ketcher-LICENSE.txt and licenses/Ketcher-NOTICE.txt.
+https://github.com/epam/ketcher
+
+Indigo / indigo-ketcher 1.40.0 — Apache License 2.0
+See licenses/Indigo-LICENSE.txt.
+https://github.com/epam/Indigo
+
+SheetJS Community Edition (xlsx) — Apache License 2.0
+Copyright (C) 2012-present SheetJS LLC.
+See licenses/SheetJS-LICENSE.txt.
+https://docs.sheetjs.com/docs/miscellany/license/
+
+shadcn/ui — MIT License
+Copyright (c) 2023 shadcn. Portions of the interface components are based on shadcn/ui.
+See licenses/shadcn-LICENSE.txt.
+https://github.com/shadcn-ui/ui
+
+Workbox — MIT License
+Copyright 2018 Google LLC. Workbox is used for offline caching.
+See licenses/Workbox-LICENSE.txt.
+https://developer.chrome.com/docs/workbox/
+
+The web build and offline ZIP include licenses/npm.md, generated from the npm
+packages in the client bundle. This file includes available license texts for
+components such as React, jsPDF, html2canvas and SmilesDrawer.
+
+The licenses/ directory includes separate texts for Radix Primitives,
+element-closest-polyfill, intersection-observer, react-remove-scroll-bar
+and wouter to supplement the npm inventory.
+
+Online resources
+----------------
+
+PubChem, provided by the National Center for Biotechnology Information (NCBI),
+is used for compound lookups. Data reuse terms are set by the respective
+PubChem data sources.
+https://pubchem.ncbi.nlm.nih.gov/docs/data-sources
+
+The online interface requests Inter and JetBrains Mono from Google Fonts.
+The font projects provide their licensing terms under the SIL Open Font License.
+https://github.com/rsms/inter/blob/master/LICENSE.txt
+https://github.com/JetBrains/JetBrainsMono/blob/master/OFL.txt

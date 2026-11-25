@@ -1,6 +1,7 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
+import { readdir, readFile } from "node:fs/promises";
 import path from "path";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 import { metaImagesPlugin } from "./vite-plugin-meta-images";
@@ -15,6 +16,21 @@ const isBuild = process.argv.includes("build") || process.env.PHLOGISTON_BUILD =
 export default defineConfig({
   plugins: [
     react(),
+    {
+      name: "phlogiston-legal-files",
+      apply: "build",
+      async generateBundle() {
+        const notices = await readdir(path.resolve(import.meta.dirname, "licenses"));
+        const files = ["LICENSE", "THIRD_PARTY_NOTICES.txt", ...notices
+          .filter((name) => name.endsWith(".txt"))
+          .map((name) => `licenses/${name}`)];
+
+        for (const fileName of files) {
+          const source = await readFile(path.resolve(import.meta.dirname, fileName));
+          this.emitFile({ type: "asset", fileName, source });
+        }
+      },
+    },
     runtimeErrorOverlay(),
     tailwindcss(),
     metaImagesPlugin(),
@@ -53,6 +69,7 @@ export default defineConfig({
         ]
       },
       workbox: {
+        globPatterns: ["**/*.{js,css,html}", "LICENSE", "THIRD_PARTY_NOTICES.txt", "licenses/*"],
         maximumFileSizeToCacheInBytes: 30000000,
         navigateFallbackDenylist: [/phlogiston\.zip$/],
         runtimeCaching: [
@@ -100,6 +117,7 @@ export default defineConfig({
   base: isBuild ? "./" : "/phlogiston-chem-journal/",
   root: path.resolve(import.meta.dirname, "client"),
   build: {
+    license: { fileName: "licenses/npm.md" },
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
     commonjsOptions: {

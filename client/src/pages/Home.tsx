@@ -2363,6 +2363,16 @@ export default function Home() {
 
       <footer className="fixed bottom-1 right-2 text-[10px] text-slate-500 z-40 pointer-events-none">
         made by Ivan Chumachenko
+        {import.meta.env.PROD && (
+          <a
+            className="pointer-events-auto ml-2 underline underline-offset-2"
+            href={`${import.meta.env.BASE_URL}THIRD_PARTY_NOTICES.txt`}
+            target="_blank"
+            rel="noopener"
+          >
+            {lang === "ru" ? "Лицензии" : "Licenses"}
+          </a>
+        )}
       </footer>
 
       {/* Mobile Export FAB */}

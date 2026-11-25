@@ -57,6 +57,8 @@ Package contents
 - favicon.png
 - sw.js
 - INSTALL_PHLOGISTON.txt
+- LICENSE (Phlogiston MIT license)
+- THIRD_PARTY_NOTICES.txt and licenses/ (third-party attributions and license texts)
 
 Notes
 -----
