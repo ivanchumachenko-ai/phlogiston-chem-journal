@@ -38,6 +38,8 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { t, getLang, setLang, Language } from "@/lib/i18n";
 import { isIncognito, networkFetch, setIncognito, useIncognito } from "@/lib/incognito";
 
+const headerButtonClass = "h-9 [--button-outline:hsl(var(--border))] hover:bg-accent/50";
+
 function resolveReagentLabel(input: string, props: ChemicalProperties | null): string {
   const trimmed = input.trim();
   if (!trimmed) return props?.name || props?.formula || "";
@@ -1112,8 +1114,13 @@ export default function Home() {
         <div className="flex items-center gap-2">
           <Sheet open={isMobileHistoryOpen} onOpenChange={setIsMobileHistoryOpen}>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="md:hidden mr-1">
-                <List className="w-5 h-5" />
+              <Button
+                variant="outline"
+                size="icon"
+                className={`${headerButtonClass} md:hidden`}
+                aria-label={t("headerHistory")}
+              >
+                <List />
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="w-[300px] sm:w-[400px]">
@@ -1233,8 +1240,9 @@ export default function Home() {
         <div className="flex items-center gap-2">
            <Button
              type="button"
-             variant={incognito ? "default" : "outline"}
+             variant="outline"
              size="sm"
+             className={`${headerButtonClass} max-sm:w-9 max-sm:px-0 aria-pressed:bg-accent aria-pressed:text-accent-foreground aria-pressed:[--button-outline:hsl(var(--primary))]`}
              aria-pressed={incognito}
              aria-label={t("incognito")}
              title={t("incognitoHint")}
@@ -1247,8 +1255,14 @@ export default function Home() {
            </Button>
            <Sheet>
              <SheetTrigger asChild>
-               <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
-                 <Info className="w-5 h-5" />
+               <Button
+                 variant="outline"
+                 size="icon"
+                 className={headerButtonClass}
+                 aria-label={t("helpHowItWorks")}
+                 title={t("helpHowItWorks")}
+               >
+                 <Info />
                </Button>
              </SheetTrigger>
              <SheetContent side="bottom" className="h-[85vh] sm:h-[85vh] sm:max-w-2xl mx-auto rounded-t-xl sm:rounded-xl sm:mb-8 flex flex-col p-0">
@@ -1498,8 +1512,8 @@ export default function Home() {
            <div className="hidden md:block">
              <Sheet open={isDesktopHistoryOpen} onOpenChange={setIsDesktopHistoryOpen}>
                <SheetTrigger asChild>
-                 <Button variant="outline" size="sm" className="flex gap-2">
-                   <History className="w-4 h-4" />
+                 <Button variant="outline" size="sm" className={headerButtonClass}>
+                   <History />
                    {t('headerHistory')}
                  </Button>
                </SheetTrigger>
@@ -1613,38 +1627,61 @@ export default function Home() {
              </Sheet>
            </div>
            
-           <div className="flex items-center ml-2">
-             <Button variant="ghost" size="icon" onClick={toggleLang} className="text-muted-foreground hover:text-foreground font-semibold text-xs h-8 w-8">
-               {lang === 'ru' ? 'EN' : 'RU'}
-             </Button>
+           <Button
+             variant="outline"
+             size="icon"
+             className={`${headerButtonClass} text-xs font-semibold`}
+             onClick={toggleLang}
+             aria-label={t("headerSwitchLanguage")}
+             title={t("headerSwitchLanguage")}
+           >
+             {lang === "ru" ? "EN" : "RU"}
+           </Button>
 
-             <Button variant="ghost" size="icon" onClick={toggleTheme} className="text-muted-foreground hover:text-foreground h-8 w-8">
-               {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-             </Button>
-           </div>
+           <Button
+             variant="outline"
+             size="icon"
+             className={headerButtonClass}
+             onClick={toggleTheme}
+             aria-label={t(isDark ? "headerLightTheme" : "headerDarkTheme")}
+             title={t(isDark ? "headerLightTheme" : "headerDarkTheme")}
+           >
+             {isDark ? <Sun /> : <Moon />}
+           </Button>
 
            {entries.length > 0 && (
              <div className="hidden md:flex items-center gap-2">
-               <Button variant="default" size="sm" className="gap-2" onClick={handleSaveSynthesis} data-testid="button-save-synthesis">
-                 <Save className="w-4 h-4" />
-                 {t('headerSave')}
+               <Button
+                 variant="outline"
+                 size="sm"
+                 className={`${headerButtonClass} max-lg:w-9 max-lg:px-0`}
+                 onClick={handleSaveSynthesis}
+                 aria-label={t("headerSave")}
+                 title={t("headerSave")}
+                 data-testid="button-save-synthesis"
+               >
+                 <Save />
+                 <span className="hidden lg:inline">{t("headerSave")}</span>
                </Button>
                <div className="flex items-center">
                  <Button
                    variant="outline"
                    size="sm"
-                   className="gap-2 rounded-r-none"
+                   className={`${headerButtonClass} rounded-r-none max-lg:w-9 max-lg:px-0`}
                    onClick={handleDownloadAllReports}
                    disabled={isDownloadingReport}
+                   aria-label={t(isDownloadingReport ? "uiReportPreparing" : "uiDownloadReport")}
                    title={t('uiDownloadReportHint')}
                    data-testid="button-download-report"
                  >
                    {isDownloadingReport ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-                   {isDownloadingReport ? t('uiReportPreparing') : t('uiDownloadReport')}
+                   <span className="hidden lg:inline">
+                     {t(isDownloadingReport ? "uiReportPreparing" : "uiDownloadReport")}
+                   </span>
                  </Button>
                  <DropdownMenu>
                    <DropdownMenuTrigger asChild>
-                     <Button variant="outline" size="sm" className="rounded-l-none border-l-0 px-2" disabled={isDownloadingReport} aria-label={t('uiOneFormat')} data-testid="button-download-report-menu">
+                     <Button variant="outline" size="sm" className={`${headerButtonClass} rounded-l-none border-l-0 px-2`} disabled={isDownloadingReport} aria-label={t('uiOneFormat')} data-testid="button-download-report-menu">
                        <ChevronDown className="w-4 h-4" />
                      </Button>
                    </DropdownMenuTrigger>
