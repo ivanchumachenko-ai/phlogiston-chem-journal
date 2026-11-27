@@ -2,6 +2,7 @@ import { build as esbuild } from "esbuild";
 import { build as viteBuild } from "vite";
 import { rm, readFile, readdir, mkdir, cp, writeFile } from "fs/promises";
 import { execSync } from "child_process";
+import { resolve } from "node:path";
 
 // server deps to bundle to reduce openat(2) syscalls
 // which helps cold start times
@@ -63,8 +64,15 @@ async function buildAll() {
   console.log("building client...");
   // Relative base: the same build works on GitHub Pages and from the offline ZIP
   const isolated = process.argv.includes("--isolated");
-  await viteBuild({ base: "./", mode: isolated ? "isolated" : "production" });
-  if (isolated) return;
+  await viteBuild({
+    base: "./",
+    mode: isolated ? "isolated" : "production",
+    ...(isolated ? { build: { outDir: resolve("dist") } } : {}),
+  });
+  if (isolated) {
+    await rm("dist/images", { recursive: true, force: true });
+    return;
+  }
 
   console.log("building server...");
   const pkg = JSON.parse(await readFile("package.json", "utf-8"));

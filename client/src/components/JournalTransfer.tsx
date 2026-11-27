@@ -1,14 +1,18 @@
 import { useRef } from "react";
+import { ShieldCheck } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { saveFiles } from "@/lib/export";
 import { getSavedSyntheses, importSavedSyntheses } from "@/lib/storage";
 import { isIsolatedJournal, isolatedJournalUrl } from "@/lib/isolatedJournal";
+import { isPublishedApp } from "@/lib/launchStatistics";
 
 const labels = {
   ru: {
     title: "Личный журнал",
-    description: "Перенесите сохранённые записи файлом. В личной копии браузер хранит журнал отдельно от основного сайта.",
+    description: "Скачайте сохранённые записи файлом, затем откройте личную копию и загрузите его там. Браузер хранит журналы двух сайтов отдельно. Исходные записи можно удалить в обычной версии после проверки переноса.",
+    localDescription: "Импортируйте файл журнала или начните с пустого. Записи хранятся в браузере на этом адресе.",
     export: "Скачать журнал",
     import: "Загрузить журнал",
     open: "Открыть личную копию",
@@ -17,7 +21,8 @@ const labels = {
   },
   en: {
     title: "Personal journal",
-    description: "Transfer saved entries with a file. Your browser keeps the personal journal separate from the main site.",
+    description: "Download your saved entries, open the personal copy, and import the file there. Your browser stores the two journals separately. You can remove the originals from the main app after checking the transfer.",
+    localDescription: "Import a journal file or start with an empty journal. Entries are stored in your browser at this address.",
     export: "Download journal",
     import: "Import journal",
     open: "Open personal copy",
@@ -26,12 +31,14 @@ const labels = {
   },
 };
 
-export function JournalTransfer({ lang, onImport }: {
+export function JournalTransfer({ lang, className, onImport }: {
   lang: keyof typeof labels;
+  className: string;
   onImport: () => void;
 }) {
   const fileInput = useRef<HTMLInputElement>(null);
   const text = labels[lang];
+  if (!isIsolatedJournal && !isPublishedApp) return null;
   const showError = () => toast({ description: text.error, variant: "destructive" });
 
   async function download() {
@@ -55,25 +62,35 @@ export function JournalTransfer({ lang, onImport }: {
   }
 
   return (
-    <section className="space-y-2 rounded-lg border p-4">
-      <h3 className="text-base font-semibold">{text.title}</h3>
-      <p className="text-sm text-muted-foreground">{text.description}</p>
-      <div className="flex flex-wrap gap-2">
-        <Button variant="outline" onClick={() => void download()}>{text.export}</Button>
-        {isIsolatedJournal ? (
-          <>
-            <input type="file" ref={fileInput} accept="application/json,.json" hidden
-              onChange={(event) => {
-                const file = event.currentTarget.files?.[0];
-                event.currentTarget.value = "";
-                if (file) void load(file);
-              }} />
-            <Button onClick={() => fileInput.current?.click()}>{text.import}</Button>
-          </>
-        ) : (
-          <Button asChild><a href={isolatedJournalUrl} target="_blank" rel="noopener noreferrer">{text.open}</a></Button>
-        )}
-      </div>
-    </section>
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button variant="outline" size="icon" className={className} title={text.title}
+          aria-label={text.title} data-testid="button-personal-journal">
+          <ShieldCheck />
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{text.title}</DialogTitle>
+          <DialogDescription>{isIsolatedJournal ? text.localDescription : text.description}</DialogDescription>
+        </DialogHeader>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={() => void download()}>{text.export}</Button>
+          {isIsolatedJournal ? (
+            <>
+              <input type="file" ref={fileInput} accept="application/json,.json" hidden
+                onChange={(event) => {
+                  const file = event.currentTarget.files?.[0];
+                  event.currentTarget.value = "";
+                  if (file) void load(file);
+                }} />
+              <Button onClick={() => fileInput.current?.click()}>{text.import}</Button>
+            </>
+          ) : (
+            <Button asChild><a href={isolatedJournalUrl} target="_blank" rel="noopener noreferrer">{text.open}</a></Button>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }

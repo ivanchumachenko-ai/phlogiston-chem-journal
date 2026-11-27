@@ -1,5 +1,5 @@
 import { JournalTransfer } from "@/components/JournalTransfer";
-import { isIsolatedJournal, showJournalTransfer } from "@/lib/isolatedJournal";
+import { isIsolatedJournal } from "@/lib/isolatedJournal";
 import { UpdatePreference } from "@/components/UpdatePreference";
 import { LaunchStatistics } from "@/components/LaunchStatistics";
 import { isPinnedApp } from "@/lib/launchStatistics";
@@ -1258,7 +1258,12 @@ export default function Home() {
              <WifiOff className="size-4" />
              <span className="hidden sm:inline">{t("incognito")}</span>
            </Button>}
-           <UpdatePreference lang={lang} incognito={incognito} className={headerButtonClass} />
+           {isPinnedApp ? (
+             <UpdatePreference lang={lang} incognito={incognito} className={headerButtonClass} />
+           ) : (
+             <JournalTransfer lang={lang} className={headerButtonClass}
+               onImport={() => setSavedSyntheses(getSavedSyntheses())} />
+           )}
            <Sheet>
              <SheetTrigger asChild>
                <Button
@@ -1282,7 +1287,6 @@ export default function Home() {
                 </div>
                     <ScrollArea className="flex-1 px-6 pb-6 overflow-y-auto">
                   <div className="space-y-6 text-sm">
-                    {showJournalTransfer && <JournalTransfer lang={lang} onImport={() => setSavedSyntheses(getSavedSyntheses())} />}
                     <LaunchStatistics lang={lang} network={networkFetch} offline={incognito} />
                     {/* Введение и безопасность */}
                     <div className="space-y-3">

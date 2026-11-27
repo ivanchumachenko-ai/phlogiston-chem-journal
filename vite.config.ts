@@ -13,7 +13,7 @@ import { nodePolyfills } from 'vite-plugin-node-polyfills';
 // the root of a local web server (python3 -m http.server).
 const isBuild = process.argv.includes("build") || process.env.PHLOGISTON_BUILD === "1";
 
-export default defineConfig(({ mode }) => ({
+export default defineConfig(async ({ mode }) => ({
   plugins: [
     react(),
     ...(mode === "isolated" ? [{
