@@ -30,7 +30,7 @@ self.addEventListener("activate", (event) => event.waitUntil(self.clients.claim(
 const router = new Router();
 router.registerRoute(new PrecacheRoute(precache));
 router.registerRoute(new NavigationRoute(precache.createHandlerBoundToURL(index), {
-  denylist: [/phlogiston\.zip$/],
+  denylist: [/phlogiston\.zip$/, /\/installed(?:\/|$)/],
 }));
 router.registerRoute(new RegExpRoute(
   /^https:\/\/pubchem\.ncbi\.nlm\.nih\.gov\/rest\/pug\/compound\/cid\/.*\/PNG/,

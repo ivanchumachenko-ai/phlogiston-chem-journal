@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from "react";
-import { OFFLINE_WORKER_FILE, readIncognito, writeIncognito } from "./incognitoStorage";
+import { OFFLINE_WORKER_FILE, incognitoSettingsScope, readIncognito, writeIncognito } from "./incognitoStorage";
 
 const listeners = new Set<() => void>();
 let enabled = false;
@@ -44,7 +44,7 @@ export async function initializeIncognito() {
   }
 
   if ("BroadcastChannel" in window) {
-    updates = new BroadcastChannel(`phlogiston-incognito:${scopeUrl()}`);
+    updates = new BroadcastChannel(`phlogiston-incognito:${incognitoSettingsScope(scopeUrl())}`);
     updates.onmessage = () => {
       void refresh().catch(console.error);
     };

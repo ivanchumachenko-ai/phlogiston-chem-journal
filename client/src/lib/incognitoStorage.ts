@@ -2,8 +2,12 @@ export const OFFLINE_WORKER_FILE = "phlogiston-sw.js";
 
 const settingsCache = "phlogiston-settings";
 
+export function incognitoSettingsScope(scope: string) {
+  return scope.endsWith("/installed/") ? new URL("../", scope).href : scope;
+}
+
 function incognitoKey(scope: string) {
-  return new URL(".phlogiston-incognito", scope).href;
+  return new URL(".phlogiston-incognito", incognitoSettingsScope(scope)).href;
 }
 
 export async function readIncognito(scope: string): Promise<boolean> {

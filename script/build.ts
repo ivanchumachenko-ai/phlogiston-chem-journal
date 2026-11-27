@@ -1,6 +1,6 @@
 import { build as esbuild } from "esbuild";
 import { build as viteBuild } from "vite";
-import { rm, readFile } from "fs/promises";
+import { rm, readFile, readdir, mkdir, cp, writeFile } from "fs/promises";
 import { execSync } from "child_process";
 
 // server deps to bundle to reduce openat(2) syscalls
@@ -32,6 +32,24 @@ const allowlist = [
   "zod",
   "zod-validation-error",
 ];
+
+async function buildInstalledApp() {
+  const publicDir = "dist/public";
+  const installedDir = publicDir + "/installed";
+  const entries = await readdir(publicDir);
+  const workerFiles = /^(?:sw\.js|phlogiston-sw\.js|workbox-.*\.js)$/;
+  await mkdir(installedDir);
+  for (const entry of entries) {
+    if (entry !== "phlogiston.zip" && !workerFiles.test(entry)) {
+      await cp(publicDir + "/" + entry, installedDir + "/" + entry, { recursive: true });
+    }
+  }
+  const files = (await readdir(installedDir, { recursive: true, withFileTypes: true }))
+    .filter((entry) => entry.isFile())
+    .map((entry) => (entry.parentPath + "/" + entry.name).slice(installedDir.length + 1));
+  await writeFile(installedDir + "/shell.json", JSON.stringify(files));
+  await cp("script/installed-worker.js", installedDir + "/phlogiston-sw.js");
+}
 
 async function buildAll() {
   await rm("dist", { recursive: true, force: true });
@@ -70,6 +88,8 @@ async function buildAll() {
   } catch (e) {
     console.error("Failed to create zip archive", e);
   }
+
+  await buildInstalledApp();
 }
 
 buildAll().catch((err) => {
