@@ -1,3 +1,4 @@
+import { isIsolatedJournal } from "./lib/isolatedJournal";
 import { createRoot } from "react-dom/client";
 import App from "./App";
 import "./index.css";
@@ -27,7 +28,7 @@ async function start() {
 
   if (isPinnedApp && !isIncognito()) {
     void navigator.serviceWorker?.register("./phlogiston-sw.js", { updateViaCache: "none" }).catch(console.error);
-  } else if (import.meta.env.PROD && !isIncognito()) {
+  } else if (import.meta.env.PROD && (!isIncognito() || isIsolatedJournal)) {
     registerSW({
       immediate: true,
       onRegisterError: console.error,

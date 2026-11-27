@@ -49,6 +49,28 @@ export function getSavedSyntheses(): SavedSynthesis[] {
   }
 }
 
+export function importSavedSyntheses(payload: unknown): void {
+  if (!payload || typeof payload !== "object" || !("version" in payload) ||
+      payload.version !== 1 || !("journal" in payload) || !Array.isArray(payload.journal)) {
+    throw new Error("Invalid Phlogiston journal");
+  }
+  const records = new Map(getSavedSyntheses().map((record) => [record.id, record]));
+  for (const record of payload.journal) {
+    if (!record || typeof record.id !== "string" ||
+        !Number.isFinite(record.createdAt) || !Number.isFinite(record.updatedAt) ||
+        !Array.isArray(record.entries) || record.entries.some((entry: unknown) =>
+          !entry || typeof entry !== "object" || !("id" in entry) || typeof entry.id !== "string" ||
+          !("nameOrFormula" in entry) || typeof entry.nameOrFormula !== "string") ||
+        !record.details || typeof record.details !== "object" || Array.isArray(record.details)) {
+      throw new Error("Invalid journal entry");
+    }
+    if (!records.has(record.id)) records.set(record.id, record);
+  }
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(
+    [...records.values()].sort((a, b) => b.updatedAt - a.updatedAt),
+  ));
+}
+
 export function saveSynthesis(
   entries: ReagentEntry[],
   details: SynthesisDetails,

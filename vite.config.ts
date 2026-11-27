@@ -13,9 +13,22 @@ import { nodePolyfills } from 'vite-plugin-node-polyfills';
 // the root of a local web server (python3 -m http.server).
 const isBuild = process.argv.includes("build") || process.env.PHLOGISTON_BUILD === "1";
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
+    ...(mode === "isolated" ? [{
+      name: "isolated-journal-content-policy",
+      transformIndexHtml() {
+        return [{
+          tag: "meta",
+          injectTo: "head-prepend" as const,
+          attrs: {
+            "http-equiv": "Content-Security-Policy",
+            content: "connect-src 'self'; img-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'",
+          },
+        }];
+      },
+    }] : []),
     {
       name: "phlogiston-legal-files",
       apply: "build",
@@ -49,7 +62,7 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.png'],
       manifest: {
-        name: 'Phlogiston',
+        name: mode === 'isolated' ? 'Phlogiston — личный журнал' : 'Phlogiston',
         short_name: 'Phlogiston',
         description: 'Offline reagent calculator for synthetic chemists',
         theme_color: '#ffffff',
@@ -132,4 +145,4 @@ export default defineConfig({
     "process.env": {},
     global: "window",
   },
-});
+}));

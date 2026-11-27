@@ -40,7 +40,7 @@ async function buildInstalledApp() {
   const workerFiles = /^(?:sw\.js|phlogiston-sw\.js|workbox-.*\.js)$/;
   await mkdir(installedDir);
   for (const entry of entries) {
-    if (entry !== "phlogiston.zip" && !workerFiles.test(entry)) {
+    if (entry !== "phlogiston.zip" && entry !== "images" && !workerFiles.test(entry)) {
       await cp(publicDir + "/" + entry, installedDir + "/" + entry, { recursive: true });
     }
   }
@@ -62,7 +62,9 @@ async function buildAll() {
 
   console.log("building client...");
   // Relative base: the same build works on GitHub Pages and from the offline ZIP
-  await viteBuild({ base: "./" });
+  const isolated = process.argv.includes("--isolated");
+  await viteBuild({ base: "./", mode: isolated ? "isolated" : "production" });
+  if (isolated) return;
 
   console.log("building server...");
   const pkg = JSON.parse(await readFile("package.json", "utf-8"));

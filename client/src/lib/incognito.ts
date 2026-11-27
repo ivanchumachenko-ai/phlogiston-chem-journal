@@ -1,9 +1,11 @@
+import { isIsolatedJournal } from "./isolatedJournal";
 import { useSyncExternalStore } from "react";
 import { OFFLINE_WORKER_FILE, incognitoSettingsScope, readIncognito, writeIncognito } from "./incognitoStorage";
 
 const listeners = new Set<() => void>();
-let enabled = false;
+let enabled = isIsolatedJournal;
 let networkController = new AbortController();
+if (isIsolatedJournal) networkController.abort();
 let updates: BroadcastChannel | undefined;
 
 export function isIncognito() {
@@ -37,7 +39,7 @@ function scopeUrl() {
 }
 
 export async function initializeIncognito() {
-  if (!("caches" in window)) return;
+  if (isIsolatedJournal || !("caches" in window)) return;
 
   async function refresh() {
     applyIncognito(await readIncognito(scopeUrl()));

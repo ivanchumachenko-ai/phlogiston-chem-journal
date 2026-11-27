@@ -1,3 +1,5 @@
+import { JournalTransfer } from "@/components/JournalTransfer";
+import { isIsolatedJournal, showJournalTransfer } from "@/lib/isolatedJournal";
 import { UpdatePreference } from "@/components/UpdatePreference";
 import { LaunchStatistics } from "@/components/LaunchStatistics";
 import { isPinnedApp } from "@/lib/launchStatistics";
@@ -1241,7 +1243,7 @@ export default function Home() {
           <h1 className="text-xl md:text-2xl font-bold tracking-tight hidden sm:block">Phlogiston</h1>
         </div>
         <div className="flex items-center gap-2">
-           <Button
+           {!isIsolatedJournal && <Button
              type="button"
              variant="outline"
              size="sm"
@@ -1255,7 +1257,7 @@ export default function Home() {
            >
              <WifiOff className="size-4" />
              <span className="hidden sm:inline">{t("incognito")}</span>
-           </Button>
+           </Button>}
            <UpdatePreference lang={lang} incognito={incognito} className={headerButtonClass} />
            <Sheet>
              <SheetTrigger asChild>
@@ -1280,6 +1282,7 @@ export default function Home() {
                 </div>
                     <ScrollArea className="flex-1 px-6 pb-6 overflow-y-auto">
                   <div className="space-y-6 text-sm">
+                    {showJournalTransfer && <JournalTransfer lang={lang} onImport={() => setSavedSyntheses(getSavedSyntheses())} />}
                     <LaunchStatistics lang={lang} network={networkFetch} offline={incognito} />
                     {/* Введение и безопасность */}
                     <div className="space-y-3">
