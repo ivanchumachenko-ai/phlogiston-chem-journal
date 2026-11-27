@@ -6,6 +6,7 @@ on:
   workflow_dispatch:
 
 permissions:
+  actions: read
   contents: read
   pages: write
   id-token: write
@@ -40,9 +41,24 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload artifact
+        id: pages-artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: './public_html'
+      - name: Wait for the Pages artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PAGES_ARTIFACT_ID: ${{ steps.pages-artifact.outputs.artifact_id }}
+        run: |
+          for attempt in {1..15}; do
+            if gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts?name=github-pages" \
+              --jq '.artifacts[].id' | grep -Fxq "$PAGES_ARTIFACT_ID"; then
+              exit 0
+            fi
+            sleep 4
+          done
+          echo "::error::GitHub Pages artifact $PAGES_ARTIFACT_ID is still missing from the Actions API."
+          exit 1
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
