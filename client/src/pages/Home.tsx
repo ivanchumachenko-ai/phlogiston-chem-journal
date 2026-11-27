@@ -1256,6 +1256,7 @@ export default function Home() {
              <WifiOff className="size-4" />
              <span className="hidden sm:inline">{t("incognito")}</span>
            </Button>
+           <UpdatePreference lang={lang} incognito={incognito} className={headerButtonClass} />
            <Sheet>
              <SheetTrigger asChild>
                <Button
@@ -1279,7 +1280,6 @@ export default function Home() {
                 </div>
                     <ScrollArea className="flex-1 px-6 pb-6 overflow-y-auto">
                   <div className="space-y-6 text-sm">
-                    <UpdatePreference lang={lang} incognito={incognito} />
                     <LaunchStatistics lang={lang} network={networkFetch} offline={incognito} />
                     {/* Введение и безопасность */}
                     <div className="space-y-3">

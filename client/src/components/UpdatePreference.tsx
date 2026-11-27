@@ -1,5 +1,7 @@
-import { useId, useState } from "react";
-import { Switch } from "@/components/ui/switch";
+import { useState } from "react";
+import { CirclePause, Download, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { toast } from "@/hooks/use-toast";
 import {
   isPinnedApp,
   isPublishedApp,
@@ -23,43 +25,48 @@ const copy = {
   },
 };
 
-export function UpdatePreference({ lang, incognito = false }: {
+export function UpdatePreference({ lang, incognito, className }: {
   lang: keyof typeof copy;
-  incognito?: boolean;
+  incognito: boolean;
+  className: string;
 }) {
-  const label = useId();
-  const description = useId();
   const [paused, setPaused] = useState(updatesPaused);
   const [saving, setSaving] = useState(false);
-  const [failed, setFailed] = useState(false);
 
   if (!isPublishedApp || (!isPinnedApp && !launchedFromHomeScreen())) return null;
   const text = copy[lang];
 
-  async function save(next: boolean) {
+  async function toggle() {
     setSaving(true);
-    setFailed(false);
+    const next = !paused;
     try {
       await setUpdatesPaused(next);
       setPaused(next);
+      toast({ description: text.detail });
     } catch {
-      setFailed(true);
+      toast({ description: text.error, variant: "destructive" });
     } finally {
       setSaving(false);
     }
   }
 
   return (
-    <section className="flex items-start justify-between gap-4 rounded-lg border p-4">
-      <div className="space-y-1">
-        <label htmlFor={label} className="text-base font-semibold">{text.title}</label>
-        <p id={description} className="text-sm text-muted-foreground">
-          {incognito ? text.incognito : text.detail}
-        </p>
-        {failed && <p role="alert" className="text-sm text-destructive">{text.error}</p>}
-      </div>
-      <Switch id={label} aria-describedby={description} checked={paused}
-        disabled={incognito || saving} onCheckedChange={(next) => void save(next)} />
-    </section>
+    <Button
+      type="button"
+      variant="outline"
+      size="icon"
+      className={`${className} shrink-0 aria-pressed:bg-accent aria-pressed:text-accent-foreground aria-pressed:[--button-outline:hsl(var(--primary))]`}
+      aria-label={text.title}
+      aria-pressed={paused}
+      aria-busy={saving}
+      aria-disabled={incognito || saving}
+      title={incognito ? text.incognito : text.title}
+      onClick={() => {
+        if (!incognito && !saving) void toggle();
+      }}
+      data-testid="button-pause-updates"
+    >
+      {saving ? <Loader2 className="animate-spin" /> : paused ? <CirclePause /> : <Download />}
+    </Button>
   );
 }
