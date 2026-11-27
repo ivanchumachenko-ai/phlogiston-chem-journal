@@ -43,6 +43,9 @@ export default defineConfig({
       },
     }),
     VitePWA({
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'phlogiston-sw.ts',
       registerType: 'autoUpdate',
       includeAssets: ['favicon.png'],
       manifest: {
@@ -68,27 +71,16 @@ export default defineConfig({
           }
         ]
       },
-      workbox: {
-        globPatterns: ["**/*.{js,css,html}", "LICENSE", "THIRD_PARTY_NOTICES.txt", "licenses/*"],
+      injectManifest: {
+        globPatterns: [
+          "**/*.html",
+          "assets/**/*.{js,css,png,jpg,svg,woff2,wasm,json}",
+          "LICENSE",
+          "THIRD_PARTY_NOTICES.txt",
+          "licenses/*",
+        ],
         maximumFileSizeToCacheInBytes: 30000000,
-        navigateFallbackDenylist: [/phlogiston\.zip$/],
-        runtimeCaching: [
-          {
-            urlPattern: /^https:\/\/pubchem\.ncbi\.nlm\.nih\.gov\/rest\/pug\/compound\/cid\/.*\/PNG/,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'pubchem-images',
-              expiration: {
-                maxEntries: 200,
-                maxAgeSeconds: 60 * 60 * 24 * 30, // 30 Days
-              },
-              cacheableResponse: {
-                statuses: [0, 200]
-              }
-            }
-          }
-        ]
-      }
+      },
     }),
     ...(process.env.NODE_ENV !== "production" &&
     process.env.REPL_ID !== undefined

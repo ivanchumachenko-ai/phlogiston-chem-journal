@@ -1,3 +1,4 @@
+import { isIncognito, networkFetch } from "./incognito";
 export const ATOMIC_WEIGHTS: Record<string, number> = {
   H: 1.008, He: 4.0026, Li: 6.94, Be: 9.0122, B: 10.81, C: 12.011, N: 14.007, O: 15.999, F: 18.998, Ne: 20.180,
   Na: 22.990, Mg: 24.305, Al: 26.982, Si: 28.085, P: 30.974, S: 32.06, Cl: 35.45, Ar: 39.948,
@@ -196,7 +197,7 @@ function mergeChemicalProperties(base: ChemicalProperties | null, enriched: Chem
     };
 }
 
-export async function get_properties_async(query: string): Promise<ChemicalProperties | null> {
+export async function get_properties_async(query: string, localOnly = false): Promise<ChemicalProperties | null> {
     if (!query) return null;
     const q = normalizeQuery(query);
     let baseResult: ChemicalProperties | null = null;
@@ -247,6 +248,7 @@ export async function get_properties_async(query: string): Promise<ChemicalPrope
     if (cachedResult && isPubChemCacheComplete(cachedResult)) {
         baseResult = mergeChemicalProperties(baseResult, cachedResult, query);
     }
+    if (localOnly || isIncognito()) return mergeChemicalProperties(baseResult, cachedResult, query);
     if (PUBCHEM_INFLIGHT.has(q)) return PUBCHEM_INFLIGHT.get(q)!;
 
     const request = (async () => {
@@ -268,7 +270,7 @@ export async function get_properties_async(query: string): Promise<ChemicalPrope
             let isLikelySmiles = false;
 
             const fetchPubChemCid = async (url: string, init?: RequestInit) => {
-                const response = await fetch(url, init);
+                const response = await networkFetch(url, init);
                 if (!response.ok) return undefined;
                 const data = await response.json();
                 const foundCid = data?.IdentifierList?.CID?.[0];
@@ -276,7 +278,7 @@ export async function get_properties_async(query: string): Promise<ChemicalPrope
             };
 
             const fetchPubChemMolfile = async (compoundCid: string) => {
-                const response = await fetch(`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/${compoundCid}/record/SDF?record_type=2d`);
+                const response = await networkFetch(`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/${compoundCid}/record/SDF?record_type=2d`);
                 if (!response.ok) return undefined;
                 const molfile = await response.text();
                 return molfile.trim() || undefined;
@@ -315,14 +317,14 @@ export async function get_properties_async(query: string): Promise<ChemicalPrope
             if (!cid) {
                 try {
                     const cactusUrl = `https://cactus.nci.nih.gov/chemical/structure/${encodeURIComponent(query)}/formula`;
-                    const cactusResponse = await fetch(cactusUrl);
+                    const cactusResponse = await networkFetch(cactusUrl);
                     if (cactusResponse.ok) {
                         const formulaText = await cactusResponse.text();
                         if (formulaText && !formulaText.includes('<html')) {
                             let finalName = query;
                             if (isLikelySmiles) {
                                 try {
-                                    const nameResponse = await fetch(`https://cactus.nci.nih.gov/chemical/structure/${encodeURIComponent(query)}/iupac_name`);
+                                    const nameResponse = await networkFetch(`https://cactus.nci.nih.gov/chemical/structure/${encodeURIComponent(query)}/iupac_name`);
                                     if (nameResponse.ok) {
                                         const nameText = await nameResponse.text();
                                         if (nameText && !nameText.includes('<html')) {
@@ -353,7 +355,7 @@ export async function get_properties_async(query: string): Promise<ChemicalPrope
             }
 
             if (cid) {
-                const response = await fetch(`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/${cid}/property/MolecularFormula,MolecularWeight,IUPACName,ConnectivitySMILES/JSON`);
+                const response = await networkFetch(`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/${cid}/property/MolecularFormula,MolecularWeight,IUPACName,ConnectivitySMILES/JSON`);
                 if (response.ok) {
                     const data = await response.json();
                     if (data?.PropertyTable?.Properties?.length > 0) {
@@ -362,7 +364,7 @@ export async function get_properties_async(query: string): Promise<ChemicalPrope
                         let density: number | undefined = undefined;
                         
                         try {
-                            const densResp = await fetch(`https://pubchem.ncbi.nlm.nih.gov/rest/pug_view/data/compound/${cid}/JSON?heading=Density`);
+                            const densResp = await networkFetch(`https://pubchem.ncbi.nlm.nih.gov/rest/pug_view/data/compound/${cid}/JSON?heading=Density`);
                             if (densResp.ok) {
                                 const densData = await densResp.json();
                                 const section1 = densData?.Record?.Section?.find((s: any) => s.TOCHeading === "Chemical and Physical Properties");
@@ -410,7 +412,7 @@ export async function get_properties_async(query: string): Promise<ChemicalPrope
                 }
             }
         } catch (e) {
-            console.error("Failed to fetch from PubChem:", e);
+            if (!isIncognito()) console.error("Failed to fetch from PubChem:", e);
         }
         
         return baseResult;

@@ -1,3 +1,4 @@
+import { networkFetch } from "./incognito";
 export async function parseWithFreeAI(text: string): Promise<any[]> {
   const prompt = `
 You are a chemistry assistant. Extract ONLY REAL chemical substances (reagents, solvents, products) from the following experimental procedure text.
@@ -25,7 +26,7 @@ Text:
 "${text}"
 `;
 
-  const response = await fetch("https://text.pollinations.ai/", {
+  const response = await networkFetch("https://text.pollinations.ai/", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({

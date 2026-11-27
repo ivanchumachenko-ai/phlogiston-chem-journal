@@ -9,12 +9,12 @@ export interface ProcedureStyle {
 export type ProcedureFontId = "inter" | "arial" | "times" | "georgia" | "courier" | "mono";
 
 export const PROCEDURE_FONTS: Array<{ id: ProcedureFontId; label: string; css: string }> = [
-  { id: "inter", label: "Inter", css: "'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif" },
+  { id: "inter", label: "Inter", css: "'Inter Variable', system-ui, -apple-system, 'Segoe UI', sans-serif" },
   { id: "arial", label: "Arial", css: "Arial, 'Helvetica Neue', Helvetica, sans-serif" },
   { id: "times", label: "Times New Roman", css: "'Times New Roman', Times, 'Liberation Serif', serif" },
   { id: "georgia", label: "Georgia", css: "Georgia, 'Palatino Linotype', Palatino, serif" },
   { id: "courier", label: "Courier New", css: "'Courier New', Courier, 'Liberation Mono', monospace" },
-  { id: "mono", label: "JetBrains Mono", css: "'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace" },
+  { id: "mono", label: "JetBrains Mono", css: "'JetBrains Mono Variable', ui-monospace, SFMono-Regular, Menlo, monospace" },
 ];
 
 export const PROCEDURE_FONT_SIZES = [10, 11, 12, 13, 14, 15, 16, 18, 20, 22, 24, 28];

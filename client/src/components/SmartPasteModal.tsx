@@ -7,7 +7,8 @@ import { ReagentEntry } from "@/lib/export";
 import { getInventory } from "@/lib/storage";
 import { parseWithFreeAI } from "@/lib/ai";
 import { get_properties_async } from "@/lib/chemistry";
-import { getLang } from "@/lib/i18n";
+import { getLang, t } from "@/lib/i18n";
+import { isIncognito, useIncognito } from "@/lib/incognito";
 
 const copy = {
   ru: {
@@ -69,6 +70,7 @@ export function SmartPasteModal({ onAddEntries }: SmartPasteModalProps) {
   const [scaleFactor, setScaleFactor] = useState<string>("1");
   const cancelledRef = useRef(false);
   const c = copy[getLang()];
+  const incognito = useIncognito();
 
   const handleCancel = () => {
     cancelledRef.current = true;
@@ -82,6 +84,7 @@ export function SmartPasteModal({ onAddEntries }: SmartPasteModalProps) {
   const parseTextLocal = async (isFallback: boolean | React.MouseEvent = false) => {
     try {
       const fallback = isFallback === true;
+      const localOnly = isIncognito();
       cancelledRef.current = false;
       if (!fallback) setIsLocalLoading(true);
       setProgress(10);
@@ -118,7 +121,7 @@ export function SmartPasteModal({ onAddEntries }: SmartPasteModalProps) {
           // Skip if candidate is too short and no valid match yet
           if (currentStr.length < 3 && !/^[A-Z]/.test(currentStr) && !longestValid) continue;
           
-          const props = await get_properties_async(currentStr);
+          const props = await get_properties_async(currentStr, localOnly);
           
           // STRICT FILTER: Accept if we found properties with formula or structure
           if (props && (props.formula || props.cid || props.smiles)) {
@@ -315,12 +318,13 @@ export function SmartPasteModal({ onAddEntries }: SmartPasteModalProps) {
       setError(e.message || c.localError);
     } finally {
       const fallback = isFallback === true;
+      const localOnly = isIncognito();
       if (!fallback) setIsLocalLoading(false);
     }
   };
 
   const parseTextAI = async () => {
-    if (!text.trim()) return;
+    if (!text.trim() || isIncognito()) return;
     
     cancelledRef.current = false;
     setIsAiLoading(true);
@@ -505,6 +509,7 @@ export function SmartPasteModal({ onAddEntries }: SmartPasteModalProps) {
             </div>
           )}
 
+          {incognito && <p className="text-xs text-muted-foreground">{t("incognitoAiDisabled")}</p>}
           {(isAiLoading || isLocalLoading) && (
             <div className="space-y-2 p-3 bg-muted/50 rounded-md">
               <div className="flex justify-between text-xs font-medium text-muted-foreground">
@@ -540,8 +545,8 @@ export function SmartPasteModal({ onAddEntries }: SmartPasteModalProps) {
             </Button>
             <Button 
               type="button"
-              onClick={parseTextAI} 
-              disabled={!text.trim() || isAiLoading || isLocalLoading} 
+              onClick={parseTextAI}
+              disabled={incognito || !text.trim() || isAiLoading || isLocalLoading}
               className="gap-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white border-0"
             >
               {isAiLoading ? (
