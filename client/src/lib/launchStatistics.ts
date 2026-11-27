@@ -7,17 +7,70 @@ const app = "phlogiston";
 const appPath = "/phlogiston-chem-journal/";
 
 export const isPublishedApp = location.origin === origin && location.pathname.startsWith(appPath);
-export const isPinnedApp = isPublishedApp && location.pathname.startsWith(appPath + "installed/");
+export const isPinnedApp = isPublishedApp && location.pathname.startsWith(appPath + "pinned/");
 
 export function launchedFromHomeScreen() {
   return matchMedia("(display-mode: standalone)").matches ||
     (navigator as Navigator & { standalone?: boolean }).standalone === true;
 }
 
-export function openPinnedApp() {
-  if (!isPublishedApp || isPinnedApp || !launchedFromHomeScreen() || !navigator.onLine) return false;
-  location.replace(appPath + "installed/" + location.search + location.hash);
-  return true;
+const updatePreferenceKey = "phlogiston:pause-updates:" + app;
+const pinnedScope = new URL(appPath + "pinned/", origin).href;
+const pinnedCache = "phlogiston-installed:" + pinnedScope;
+
+export function updatesPaused() {
+  try {
+    return localStorage.getItem(updatePreferenceKey) === "true";
+  } catch {
+    return false;
+  }
+}
+
+export async function setUpdatesPaused(paused: boolean) {
+  if (paused && !isPinnedApp) {
+    if (!navigator.onLine || !("serviceWorker" in navigator) || !("caches" in window)) {
+      throw new Error("Cannot save the installed version");
+    }
+    const previous = await navigator.serviceWorker.getRegistration(pinnedScope);
+    if (previous?.scope === pinnedScope) await previous.unregister();
+    await caches.delete(pinnedCache);
+    const registration = await navigator.serviceWorker.register(
+      new URL("phlogiston-sw.js", pinnedScope), { updateViaCache: "none" },
+    );
+    const worker = registration.installing ?? registration.waiting ?? registration.active;
+    if (!worker) throw new Error("No worker for the installed version");
+    await new Promise<void>((resolve, reject) => {
+      function check() {
+        if (worker?.state !== "activated" && worker?.state !== "redundant") return;
+        worker.removeEventListener("statechange", check);
+        if (worker.state === "activated") resolve();
+        else reject(new Error("Cannot cache the installed version"));
+      }
+      worker.addEventListener("statechange", check);
+      check();
+    });
+    if (!await caches.match(pinnedScope + "index.html", { cacheName: pinnedCache })) {
+      throw new Error("The installed version is missing");
+    }
+  }
+  localStorage.setItem(updatePreferenceKey, String(paused));
+}
+
+export async function openPreferredApp() {
+  if (!isPublishedApp || (!isPinnedApp && !launchedFromHomeScreen())) return false;
+  const paused = updatesPaused();
+  if (isPinnedApp && !paused && navigator.onLine) {
+    location.replace(appPath + location.search + location.hash);
+    return true;
+  }
+  if (!isPinnedApp && paused) {
+    if (navigator.onLine || ("caches" in window &&
+        await caches.match(pinnedScope + "index.html", { cacheName: pinnedCache }))) {
+      location.replace(appPath + "pinned/" + location.search + location.hash);
+      return true;
+    }
+  }
+  return false;
 }
 
 type Launch = { id: string; browserId: string; app: string; standalone: boolean };

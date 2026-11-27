@@ -35,7 +35,7 @@ const allowlist = [
 
 async function buildInstalledApp() {
   const publicDir = "dist/public";
-  const installedDir = publicDir + "/installed";
+  const installedDir = publicDir + "/pinned";
   const entries = await readdir(publicDir);
   const workerFiles = /^(?:sw\.js|phlogiston-sw\.js|workbox-.*\.js)$/;
   await mkdir(installedDir);
@@ -49,6 +49,12 @@ async function buildInstalledApp() {
     .map((entry) => (entry.parentPath + "/" + entry.name).slice(installedDir.length + 1));
   await writeFile(installedDir + "/shell.json", JSON.stringify(files));
   await cp("script/installed-worker.js", installedDir + "/phlogiston-sw.js");
+
+  // Existing home-screen shortcuts may still point to the old install URL.
+  const legacyDir = publicDir + "/installed";
+  await mkdir(legacyDir);
+  await cp("script/legacy-installed-worker.js", legacyDir + "/phlogiston-sw.js");
+  await cp("script/installed-launcher.html", legacyDir + "/index.html");
 }
 
 async function buildAll() {

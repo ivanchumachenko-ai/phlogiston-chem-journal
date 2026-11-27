@@ -38,6 +38,7 @@ jobs:
           unzip dist/public/phlogiston.zip -d public_html
           cp dist/public/phlogiston.zip public_html/phlogiston.zip
           cp -r dist/public/installed public_html/installed
+          cp -r dist/public/pinned public_html/pinned
           for manifest in public_html/manifest.webmanifest public_html/manifest.json; do
             jq '.start_url = "./installed/"' "$manifest" > "$manifest.tmp"
             mv "$manifest.tmp" "$manifest"

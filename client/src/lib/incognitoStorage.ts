@@ -3,7 +3,7 @@ export const OFFLINE_WORKER_FILE = "phlogiston-sw.js";
 const settingsCache = "phlogiston-settings";
 
 export function incognitoSettingsScope(scope: string) {
-  return scope.endsWith("/installed/") ? new URL("../", scope).href : scope;
+  return scope.endsWith("/pinned/") ? new URL("../", scope).href : scope;
 }
 
 function incognitoKey(scope: string) {

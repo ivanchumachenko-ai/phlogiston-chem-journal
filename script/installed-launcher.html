@@ -1,0 +1,32 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Phlogiston</title>
+</head>
+<body>
+  <a href="../">Phlogiston</a>
+  <script>
+    async function launch() {
+      if (navigator.onLine) {
+        await navigator.serviceWorker?.register("./phlogiston-sw.js").catch(() => {});
+      }
+      const pinned = new URL("../pinned/", location.href);
+      let destination = "../";
+      try {
+        if (localStorage.getItem("phlogiston:pause-updates:phlogiston") === "true" &&
+            (navigator.onLine || await caches.match(new URL("index.html", pinned).href, {
+              cacheName: "phlogiston-installed:" + pinned.href,
+            }))) {
+          destination = "../pinned/";
+        }
+      } catch {
+        // The ordinary app is available when this browser blocks storage.
+      }
+      location.replace(destination + location.search + location.hash);
+    }
+    void launch();
+  </script>
+</body>
+</html>
