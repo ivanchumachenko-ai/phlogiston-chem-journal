@@ -67,7 +67,7 @@ export function importSavedSyntheses(payload: unknown): void {
     if (!records.has(record.id)) records.set(record.id, record);
   }
   localStorage.setItem(STORAGE_KEY, JSON.stringify(
-    [...records.values()].sort((a, b) => b.updatedAt - a.updatedAt),
+    Array.from(records.values()).sort((a, b) => b.updatedAt - a.updatedAt),
   ));
 }
 

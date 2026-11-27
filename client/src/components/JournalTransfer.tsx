@@ -52,7 +52,7 @@ export function JournalTransfer({ lang, className, onImport }: {
 
   async function load(file: File) {
     try {
-      if (file.size > 6 * 1024 * 1024) throw new Error("File exceeds local journal capacity");
+      if (file.size > 20 * 1024 * 1024) throw new Error("File exceeds local journal capacity");
       importSavedSyntheses(JSON.parse(await file.text()));
       onImport();
       toast({ description: text.imported });
