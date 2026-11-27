@@ -1,5 +1,6 @@
 import type { ProcedureStyle } from "@/lib/textStyle";
 import { ChemicalProperties } from "./chemistry";
+import { isIncognito } from "./incognito";
 
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
@@ -317,6 +318,20 @@ export async function openPublicationPdf(entries: ReagentEntry[], details: Synth
   }
 }
 
+function copyLinkedPrintStyles(doc: Document) {
+  for (const sheet of Array.from(doc.styleSheets)) {
+    if (!sheet.href || new URL(sheet.href).origin !== doc.location.origin) continue;
+    const owner = sheet.ownerNode;
+    if (!owner?.parentNode) continue;
+
+    const style = doc.createElement("style");
+    style.textContent = Array.from(sheet.cssRules, (rule) => rule.cssText)
+      .join("\n")
+      .replace(/oklch\([^)]+\)/g, "#888888");
+    owner.parentNode.insertBefore(style, owner.nextSibling);
+  }
+}
+
 /**
  * Render the publication view in a hidden iframe and turn it into a PDF.
  * Returns null (after alerting the user) when generation fails.
@@ -328,6 +343,7 @@ export async function renderPublicationPdfBlob(
   inventoryLocFn?: (name: string, formula?: string) => string | null,
 ): Promise<Blob | null> {
   let resultBlob: Blob | null = null;
+  const localExport = isIncognito();
 
   // Create a hidden iframe to render the print view for capture
   const iframe = document.createElement('iframe');
@@ -415,8 +431,12 @@ export async function renderPublicationPdfBlob(
           
 
 
-          // We need a more comprehensive way to strip oklch before html2canvas sees it
+          const offline = localExport || isIncognito();
+          // html2canvas loads links in a new about:blank document outside the PWA's cache policy.
+          if (offline) copyLinkedPrintStyles(doc);
+
           const canvas = await html2canvas(printShell, {
+            ignoreElements: offline ? (element) => element.tagName === "LINK" : undefined,
             scale: 4, // Увеличил scale для лучшего качества
             useCORS: true,
             logging: false,
@@ -715,7 +735,7 @@ function downloadViaLink(file: Blob, filename: string) {
  * click gesture expired during PDF generation — the caller can then ask for one more tap.
  */
 export async function saveFiles(files: File[], options: { allowShare?: boolean } = {}): Promise<"shared" | "downloaded" | "cancelled"> {
-  if (options.allowShare !== false && canShareFiles(files)) {
+  if (!isIncognito() && options.allowShare !== false && canShareFiles(files)) {
     try {
       await navigator.share({ files, title: files.map((f) => f.name).join(", ") });
       return "shared";

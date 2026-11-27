@@ -112,6 +112,10 @@ export default defineConfig({
     license: { fileName: "licenses/npm.md" },
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
+    assetsInlineLimit(filePath) {
+      // The offline PDF renderer copies styles into a document with no stylesheet requests.
+      if (filePath.includes("@fontsource-variable/") && filePath.endsWith(".woff2")) return true;
+    },
     commonjsOptions: {
       transformMixedEsModules: true,
     },
