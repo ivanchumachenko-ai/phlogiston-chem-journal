@@ -1,3 +1,4 @@
+import { isLocalImageSource, useIncognito } from "@/lib/incognito";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -110,6 +111,7 @@ const copy = {
 };
 
 export function CustomSectionManager({ sections = [], onChange, lang }: Props) {
+  const incognito = useIncognito();
   const t = copy[lang];
   const [focusedCell, setFocusedCell] = useState<{ sectionId: string; rowIndex: number; colIndex: number } | null>(null);
 
@@ -227,7 +229,7 @@ export function CustomSectionManager({ sections = [], onChange, lang }: Props) {
     if (section.type === "image") {
       return (
         <div className="mt-2">
-          {section.content ? (
+          {section.content && (!incognito || isLocalImageSource(section.content)) ? (
             <div className="relative group rounded-md overflow-hidden border">
               <img src={section.content} alt="Upload" className="max-h-[300px] w-auto object-contain mx-auto" />
               <Button 

@@ -1,3 +1,4 @@
+import { networkFetch } from "./incognito";
 export async function parseExperimentalTextWithGemini(apiKey: string, text: string) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
   
@@ -22,7 +23,7 @@ Text:
 "${text}"
 `;
 
-  const response = await fetch(url, {
+  const response = await networkFetch(url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

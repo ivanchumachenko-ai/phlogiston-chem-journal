@@ -36,6 +36,7 @@ import { ReactionScheme, ReactionSchemeData } from "@/components/ReactionScheme"
 
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { t, getLang, setLang, Language } from "@/lib/i18n";
+import { isIncognito, networkFetch, setIncognito, useIncognito } from "@/lib/incognito";
 
 function resolveReagentLabel(input: string, props: ChemicalProperties | null): string {
   const trimmed = input.trim();
@@ -104,6 +105,8 @@ import { DEFAULT_PROCEDURE_STYLE, normalizeProcedureStyle, type ProcedureStyle }
 export default function Home() {
   const [entries, setEntries] = useState<ReagentEntry[]>([]);
   const [lang, setCurrentLang] = useState<Language>(getLang());
+  const incognito = useIncognito();
+  const [isChangingIncognito, setIsChangingIncognito] = useState(false);
   
   // Storage state
   const [currentSynthesisId, setCurrentSynthesisId] = useState<string | undefined>(undefined);
@@ -174,7 +177,19 @@ export default function Home() {
   const windowsExtractCommand = 'Expand-Archive -Path ".\\phlogiston.zip" -DestinationPath ".\\phlogiston-offline" -Force';
   const windowsRunCommand = 'Set-Location ".\\phlogiston-offline"; py -m http.server 8000';
 
+  const toggleIncognito = async () => {
+    setIsChangingIncognito(true);
+    try {
+      await setIncognito(!incognito);
+    } catch {
+      toast({ description: t("incognitoUnavailable"), variant: "destructive" });
+    } finally {
+      setIsChangingIncognito(false);
+    }
+  };
+
   const handleGSheetsSync = async () => {
+    if (isIncognito()) return;
     if (!gsheetsUrl) {
       toast({
         title: t('error'),
@@ -190,7 +205,7 @@ export default function Home() {
     setIsSyncingGSheets(true);
     try {
       // Allow fetching through proxy or direct
-      const response = await fetch(gsheetsUrl);
+      const response = await networkFetch(gsheetsUrl);
       if (!response.ok) throw new Error("Failed to fetch");
       
       const csvText = await response.text();
@@ -252,6 +267,7 @@ export default function Home() {
         description: `${t('helpDensityFor')} ${parsedInventory.length} ${t('helpSolution')}` // Or add a specific translation for "Loaded X items from Google Sheets"
       });
     } catch (e) {
+      if (isIncognito()) return;
       console.error(e);
       toast({
         title: t('msgSyncError'),
@@ -801,13 +817,14 @@ export default function Home() {
   // Auto-calculate molar mass and properties when input changes
   useEffect(() => {
     let isMounted = true;
+    const localOnly = isIncognito();
 
     async function fetchProps() {
       const lookupQuery = inputSmiles.trim() || inputName.trim();
 
       if (lookupQuery) {
         setIsLoadingProps(true);
-        const props = await get_properties_async(lookupQuery);
+        const props = await get_properties_async(lookupQuery, localOnly);
         
         if (!isMounted) return;
 
@@ -1141,13 +1158,13 @@ export default function Home() {
                       size="sm" 
                       className="h-8 px-3 flex gap-1.5 items-center transition-all"
                       onClick={handleGSheetsSync} 
-                      disabled={isSyncingGSheets}
+                      disabled={incognito || isSyncingGSheets}
                     >
                         {isSyncingGSheets ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
                         <span className="text-xs hidden sm:inline">{t('uiLoad')}</span>
                     </Button>
                   </div>
-                  <p className="text-[10px] text-muted-foreground">{t('uiPasteDesc')}</p>
+                  <p className="text-[10px] text-muted-foreground">{t(incognito ? "incognitoSheetsDisabled" : "uiPasteDesc")}</p>
                 </div>
 
                 <Separator />
@@ -1214,6 +1231,20 @@ export default function Home() {
           <h1 className="text-xl md:text-2xl font-bold tracking-tight hidden sm:block">Phlogiston</h1>
         </div>
         <div className="flex items-center gap-2">
+           <Button
+             type="button"
+             variant={incognito ? "default" : "outline"}
+             size="sm"
+             aria-pressed={incognito}
+             aria-label={t("incognito")}
+             title={t("incognitoHint")}
+             onClick={toggleIncognito}
+             disabled={isChangingIncognito}
+             data-testid="button-incognito"
+           >
+             <WifiOff className="size-4" />
+             <span className="hidden sm:inline">{t("incognito")}</span>
+           </Button>
            <Sheet>
              <SheetTrigger asChild>
                <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
@@ -1349,7 +1380,8 @@ export default function Home() {
                       <div className="text-muted-foreground leading-relaxed">
                         <p>{t('helpOfflineText')}</p>
                         <a
-                          href={downloadUrl}
+                          href={incognito ? undefined : downloadUrl}
+                          aria-disabled={incognito || undefined}
                           download="phlogiston.zip"
                           target="_blank"
                           rel="noopener noreferrer"
@@ -1430,9 +1462,10 @@ export default function Home() {
                         <p>{t('helpDownloadText')}</p>
                         <div className="flex flex-col sm:flex-row gap-3 mt-1">
                           <a
-                            href="phlogiston.zip"
+                            href={incognito ? undefined : "phlogiston.zip"}
+                            aria-disabled={incognito || undefined}
                             download="phlogiston.zip"
-                            className="bg-primary text-primary-foreground hover:bg-primary/90 transition-colors px-4 py-2.5 rounded-md font-medium inline-flex items-center justify-center gap-2 text-sm shadow-sm"
+                            className="bg-primary text-primary-foreground hover:bg-primary/90 aria-disabled:opacity-50 aria-disabled:cursor-not-allowed transition-colors px-4 py-2.5 rounded-md font-medium inline-flex items-center justify-center gap-2 text-sm shadow-sm"
                             data-testid="link-download-pwa"
                           >
                             <Download className="w-4 h-4" />
@@ -1511,14 +1544,14 @@ export default function Home() {
                           size="sm" 
                           className={`h-8 px-3 flex gap-1.5 items-center transition-all ${!gsheetsUrl ? 'opacity-50' : 'opacity-100'}`}
                           onClick={handleGSheetsSync} 
-                          disabled={isSyncingGSheets || !gsheetsUrl}
+                          disabled={incognito || isSyncingGSheets || !gsheetsUrl}
                           variant={gsheetsUrl ? "default" : "secondary"}
                         >
                             {isSyncingGSheets ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
                             <span className="text-xs hidden sm:inline">{t('uiLoad')}</span>
                         </Button>
                       </div>
-                      <p className="text-[10px] text-muted-foreground">{t('uiPasteDesc')}</p>
+                      <p className="text-[10px] text-muted-foreground">{t(incognito ? "incognitoSheetsDisabled" : "uiPasteDesc")}</p>
                     </div>
 
                     <Separator />
@@ -1703,7 +1736,7 @@ export default function Home() {
                   <div className="bg-accent/50 rounded-xl p-3 border border-accent flex gap-3 relative overflow-hidden group">
                     {(properties.cid || properties.smiles) && (
                       <div className="w-16 h-16 shrink-0 bg-white rounded-lg p-1 border shadow-sm flex items-center justify-center overflow-hidden">
-                        {properties.cid ? (
+                        {properties.cid && !incognito ? (
                           <img 
                             src={`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/${properties.cid}/PNG?record_type=2d`}
                             alt={`Structure of ${properties.name}`}
@@ -1721,7 +1754,7 @@ export default function Home() {
                         <div className="flex flex-col gap-2 mt-0.5 w-full">
                           <Badge variant="outline" className="bg-background font-mono text-[10px] px-1.5 py-0 w-fit">{formatFormula(properties.formula)}</Badge>
                           {/* External Link to PubChem moved here */}
-                          {properties.cid && (
+                          {properties.cid && !incognito && (
                             <a 
                               href={`https://pubchem.ncbi.nlm.nih.gov/compound/${properties.cid}`}
                               target="_blank"

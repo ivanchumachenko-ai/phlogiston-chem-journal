@@ -4,6 +4,7 @@ import { Editor } from "ketcher-react";
 import "ketcher-react/dist/index.css";
 import { toast } from "@/hooks/use-toast";
 import { t } from "@/lib/i18n";
+import { isIncognito, networkFetch } from "@/lib/incognito";
 import { calculateFormulaFromMolfile, areFormulasConsistent } from "@/lib/chemistry";
 
 const structServiceProvider = new StandaloneStructServiceProvider();
@@ -20,7 +21,7 @@ async function fetchTextWithTimeout(url: string, timeoutMs: number) {
   const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
 
   try {
-    const response = await fetch(url, { signal: controller.signal });
+    const response = await networkFetch(url, { signal: controller.signal });
     if (!response.ok) return null;
     return await response.text();
   } catch {
@@ -35,7 +36,7 @@ async function fetchJsonWithTimeout(url: string, init: RequestInit | undefined, 
   const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
 
   try {
-    const response = await fetch(url, { ...init, signal: controller.signal });
+    const response = await networkFetch(url, { ...init, signal: controller.signal });
     if (!response.ok) return null;
     return await response.json();
   } catch {
@@ -143,6 +144,7 @@ export function StructureEditor({ onFormulaCalculated, onClose, mode = "molecule
 
   const handleGetFormula = async () => {
     if (!ketcherRef.current) return;
+    const localOnly = isIncognito();
 
     try {
       setIsProcessing(true);
@@ -183,7 +185,7 @@ export function StructureEditor({ onFormulaCalculated, onClose, mode = "molecule
 
       let name: string | undefined;
 
-      if (smiles) {
+      if (smiles && !localOnly && !isIncognito()) {
         const lookupResult = await lookupStructureName(smiles);
         if (lookupResult?.name) {
           name = lookupResult.name;

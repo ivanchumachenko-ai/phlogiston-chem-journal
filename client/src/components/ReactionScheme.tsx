@@ -1,3 +1,4 @@
+import { useIncognito } from "@/lib/incognito";
 import { useEffect, useMemo, useRef, useState } from "react";
 import SmilesDrawer from "smiles-drawer";
 import { Plus, X, ArrowRight, Check, Trash2, GitCommitHorizontal } from "lucide-react";
@@ -182,7 +183,8 @@ function StructureCanvas({ smiles, cleanMode = false, printMode = false }: { smi
 }
 
 function StructureCard({ label, smiles, molfile, cid, highlight, secondaryLabel, cleanMode = false, printMode = false }: StructureCardProps) {
-  const isOnline = typeof navigator === "undefined" ? true : navigator.onLine;
+  const incognito = useIncognito();
+  const isOnline = !incognito && (typeof navigator === "undefined" || navigator.onLine);
   const hasStructure = Boolean(smiles || cid || molfile);
 
   const wrapperClass = printMode

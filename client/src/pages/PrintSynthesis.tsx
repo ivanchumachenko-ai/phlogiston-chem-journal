@@ -1,3 +1,4 @@
+import { isLocalImageSource, useIncognito } from "@/lib/incognito";
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ReactionScheme } from "@/components/ReactionScheme";
@@ -196,6 +197,7 @@ export default function PrintSynthesis({
   isHiddenExport?: boolean;
   onReady?: (el: HTMLElement) => void;
 }) {
+  const incognito = useIncognito();
   const [payload, setPayload] = useState<PublicationPdfPayload | null>(null);
 
   useEffect(() => {
@@ -437,7 +439,7 @@ export default function PrintSynthesis({
                       </div>
                     )}
                     
-                    {section.type === "image" && section.content && (
+                    {section.type === "image" && section.content && (!incognito || isLocalImageSource(section.content)) && (
                       <div className="mt-2 text-center">
                         <img src={section.content} alt={section.title} className="max-h-[400px] max-w-full object-contain mx-auto rounded-xl border border-stone-200 shadow-sm" />
                       </div>

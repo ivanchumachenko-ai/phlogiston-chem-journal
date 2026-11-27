@@ -32,6 +32,11 @@ Copyright 2018 Google LLC. Workbox is used for offline caching.
 See licenses/Workbox-LICENSE.txt.
 https://developer.chrome.com/docs/workbox/
 
+Inter and JetBrains Mono — SIL Open Font License 1.1
+See licenses/Inter-OFL.txt and licenses/JetBrainsMono-OFL.txt.
+https://github.com/rsms/inter
+https://github.com/JetBrains/JetBrainsMono
+
 The web build and offline ZIP include licenses/npm.md, generated from the npm
 packages in the client bundle. This file includes available license texts for
 components such as React, jsPDF, html2canvas and SmilesDrawer.
@@ -47,8 +52,3 @@ PubChem, provided by the National Center for Biotechnology Information (NCBI),
 is used for compound lookups. Data reuse terms are set by the respective
 PubChem data sources.
 https://pubchem.ncbi.nlm.nih.gov/docs/data-sources
-
-The online interface requests Inter and JetBrains Mono from Google Fonts.
-The font projects provide their licensing terms under the SIL Open Font License.
-https://github.com/rsms/inter/blob/master/LICENSE.txt
-https://github.com/JetBrains/JetBrainsMono/blob/master/OFL.txt
