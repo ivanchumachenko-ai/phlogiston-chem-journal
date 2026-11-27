@@ -149,12 +149,38 @@
 }
 
 
+/* Keep the drawing area and its controls within short landscape viewports. */
+.structure-editor-dialog {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: none;
+  height: 100dvh;
+  padding-inline: env(safe-area-inset-left) env(safe-area-inset-right);
+  border-radius: 0;
+}
+
+.structure-editor-dialog > button {
+  top: max(1rem, env(safe-area-inset-top));
+  right: max(1rem, env(safe-area-inset-right));
+  z-index: 20;
+}
+
+@media (min-width: 768px) and (min-height: 640px) {
+  .structure-editor-dialog {
+    width: calc(100% - 2rem);
+    max-width: 56rem;
+    height: 600px;
+    border-radius: var(--radius);
+  }
+}
+
 /* Ketcher Editor Fixes */
 .ketcher-root,
 .Ketcher-root {
   width: 100% !important;
   height: 100% !important;
-  min-height: 400px !important;
+  min-height: 0 !important;
   background-color: #ffffff !important;
 }
 

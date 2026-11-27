@@ -219,13 +219,13 @@ export function StructureEditor({ onFormulaCalculated, onClose, mode = "molecule
   };
 
   return (
-    <div className="structure-editor flex h-[100dvh] md:h-[600px] w-full flex-col overflow-hidden rounded-none md:rounded-lg border-0 md:border border-border bg-white dark:bg-zinc-950">
-      <div className="flex items-center justify-between border-b bg-muted/30 px-3 py-2 md:p-3" style={{ paddingTop: "max(0.5rem, env(safe-area-inset-top))" }}>
+    <div className="structure-editor flex min-h-0 w-full flex-1 flex-col overflow-hidden bg-white dark:bg-zinc-950">
+      <div className="flex shrink-0 items-center justify-between border-b bg-muted/30 px-3 py-2 md:p-3" style={{ paddingTop: "max(0.5rem, env(safe-area-inset-top))" }}>
         <h3 className="text-sm font-medium">
           {mode === "reaction" ? t("reactionEditorTitle") : t("structureEditorTitle")}
         </h3>
       </div>
-      <div ref={editorHostRef} className="relative flex-1 min-h-0 w-full" style={{ touchAction: "none" }}>
+      <div ref={editorHostRef} className="relative isolate min-h-0 min-w-0 w-full flex-1" style={{ touchAction: "none" }}>
         
         <Editor
           staticResourcesUrl={""}
@@ -242,7 +242,7 @@ export function StructureEditor({ onFormulaCalculated, onClose, mode = "molecule
           }}
         />
       </div>
-      <div className="flex justify-end gap-2 border-t bg-muted/50 px-3 py-2 md:p-4" style={{ paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))" }}>
+      <div className="relative z-10 flex shrink-0 justify-end gap-2 border-t bg-muted/50 px-3 py-2 md:p-4" style={{ paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))" }}>
         <button
           onClick={onClose}
           className="rounded-md border px-4 py-2 text-sm font-medium hover:bg-muted"

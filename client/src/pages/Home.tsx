@@ -1297,7 +1297,7 @@ export default function Home() {
                     </SheetDescription>
                   </SheetHeader>
                 </div>
-                    <ScrollArea className="flex-1 px-6 pb-6 overflow-y-auto">
+                    <ScrollArea className="min-h-0 flex-1 px-6 pb-6 overflow-y-auto">
                   <div className="space-y-6 text-sm">
                     <LaunchStatistics lang={lang} network={networkFetch} offline={incognito} />
                     {/* Введение и безопасность */}
@@ -1315,15 +1315,6 @@ export default function Home() {
                         </p>
                       </div>
 
-                      <div className="bg-destructive/10 p-3 rounded-md border border-destructive/20 mt-3">
-                        <p className="font-semibold text-destructive mb-1 flex items-center gap-1.5 text-xs">
-                          <AlertCircle className="w-3.5 h-3.5" />
-                          {t('legalDisclaimerTitle')}
-                        </p>
-                        <p className="text-destructive/80 text-[11px] leading-relaxed">
-                          {t('legalDisclaimerText')}
-                        </p>
-                      </div>
                     </div>
 
                     <Separator />
@@ -1527,6 +1518,15 @@ export default function Home() {
                   </div>
 
                   </div>
+                    <div className="bg-destructive/10 p-3 rounded-md border border-destructive/20">
+                      <p className="font-semibold text-destructive mb-1 flex items-center gap-1.5 text-xs">
+                        <AlertCircle className="w-3.5 h-3.5" />
+                        {t('legalDisclaimerTitle')}
+                      </p>
+                      <p className="text-destructive/80 text-[11px] leading-relaxed">
+                        {t('legalDisclaimerText')}
+                      </p>
+                    </div>
                   </div>
                 </ScrollArea>
              </SheetContent>
@@ -2506,13 +2506,13 @@ export default function Home() {
       {/* Structure Editor */}
       <Dialog open={isStructureEditorOpen !== false} onOpenChange={(open) => !open && setIsStructureEditorOpen(false)}>
         <DialogContent
-          className="p-0 overflow-hidden border-none bg-transparent shadow-none w-screen h-[100dvh] max-w-none rounded-none sm:rounded-none md:w-full md:h-auto md:max-w-4xl md:rounded-lg"
+          className="structure-editor-dialog gap-0 overflow-hidden border-none bg-transparent p-0 shadow-none"
           aria-describedby={undefined}
         >
           <DialogTitle className="sr-only">{isStructureEditorOpen === "reaction" ? t("reactionEditorTitle") : t("structureEditorTitle")}</DialogTitle>
           <React.Suspense
             fallback={
-              <div className="flex h-[100dvh] md:h-[600px] w-full items-center justify-center rounded-none md:rounded-lg bg-white dark:bg-zinc-950 text-sm text-muted-foreground gap-2">
+              <div className="flex min-h-0 flex-1 w-full items-center justify-center bg-white dark:bg-zinc-950 text-sm text-muted-foreground gap-2">
                 <Loader2 className="h-4 w-4 animate-spin" /> {t("processing")}
               </div>
             }
