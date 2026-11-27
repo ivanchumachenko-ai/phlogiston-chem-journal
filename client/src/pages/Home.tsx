@@ -1113,7 +1113,7 @@ export default function Home() {
       />
       
       {/* iOS Style Header */}
-      <header className="sticky top-0 w-full z-10 glass-panel px-4 py-4 md:py-6 flex items-center justify-between shadow-sm">
+      <header className="sticky top-0 w-full z-10 glass-panel px-4 py-4 max-[360px]:px-3 md:py-6 flex items-center justify-between shadow-sm">
         <div className="flex items-center gap-2">
           <Sheet open={isMobileHistoryOpen} onOpenChange={setIsMobileHistoryOpen}>
             <SheetTrigger asChild>

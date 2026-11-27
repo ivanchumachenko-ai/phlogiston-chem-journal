@@ -55,7 +55,7 @@ export function UpdatePreference({ lang, incognito, className }: {
       type="button"
       variant="outline"
       size="icon"
-      className={`${className} shrink-0 aria-pressed:bg-accent aria-pressed:text-accent-foreground aria-pressed:[--button-outline:hsl(var(--primary))]`}
+      className={`${className} shrink-0 aria-disabled:opacity-50 aria-pressed:bg-accent aria-pressed:text-accent-foreground aria-pressed:[--button-outline:hsl(var(--primary))]`}
       aria-label={text.title}
       aria-pressed={paused}
       aria-busy={saving}
