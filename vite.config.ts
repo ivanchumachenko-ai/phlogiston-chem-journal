@@ -1,4 +1,4 @@
-import { defineConfig, type UserConfig } from "vite";
+import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { readdir, readFile } from "node:fs/promises";
@@ -13,22 +13,9 @@ import { nodePolyfills } from 'vite-plugin-node-polyfills';
 // the root of a local web server (python3 -m http.server).
 const isBuild = process.argv.includes("build") || process.env.PHLOGISTON_BUILD === "1";
 
-export default defineConfig(async ({ mode }): Promise<UserConfig> => ({
+export default defineConfig({
   plugins: [
     react(),
-    ...(mode === "isolated" ? [{
-      name: "isolated-journal-content-policy",
-      transformIndexHtml() {
-        return [{
-          tag: "meta",
-          injectTo: "head-prepend" as const,
-          attrs: {
-            "http-equiv": "Content-Security-Policy",
-            content: "connect-src 'self'; img-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'",
-          },
-        }];
-      },
-    }] : []),
     {
       name: "phlogiston-legal-files",
       apply: "build",
@@ -62,7 +49,7 @@ export default defineConfig(async ({ mode }): Promise<UserConfig> => ({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.png'],
       manifest: {
-        name: mode === 'isolated' ? 'Phlogiston — личный журнал' : 'Phlogiston',
+        name: 'Phlogiston',
         short_name: 'Phlogiston',
         description: 'Offline reagent calculator for synthetic chemists',
         theme_color: '#ffffff',
@@ -87,6 +74,8 @@ export default defineConfig(async ({ mode }): Promise<UserConfig> => ({
       injectManifest: {
         globPatterns: [
           "**/*.html",
+          "manifest.webmanifest",
+          "manifest.json",
           "assets/**/*.{js,css,png,jpg,svg,woff2,wasm,json}",
           "LICENSE",
           "THIRD_PARTY_NOTICES.txt",
@@ -145,4 +134,4 @@ export default defineConfig(async ({ mode }): Promise<UserConfig> => ({
     "process.env": {},
     global: "window",
   },
-}));
+});

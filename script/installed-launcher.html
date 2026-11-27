@@ -9,6 +9,17 @@
   <a href="../">Phlogiston</a>
   <script>
     async function launch() {
+      const root = new URL("../", location.href);
+      try {
+        if (localStorage.getItem("phlogiston:shield:" + root.href) === "1") {
+          root.searchParams.set("shield", "1");
+          root.hash = location.hash;
+          location.replace(root.href);
+          return;
+        }
+      } catch {
+        // A setting stored by the worker still applies when the main app loads.
+      }
       if (navigator.onLine) {
         await navigator.serviceWorker?.register("./phlogiston-sw.js").catch(() => {});
       }

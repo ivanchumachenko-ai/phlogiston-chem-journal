@@ -1,5 +1,3 @@
-import { JournalTransfer } from "@/components/JournalTransfer";
-import { isIsolatedJournal } from "@/lib/isolatedJournal";
 import { UpdatePreference } from "@/components/UpdatePreference";
 import { LaunchStatistics } from "@/components/LaunchStatistics";
 import { isPinnedApp } from "@/lib/launchStatistics";
@@ -113,6 +111,12 @@ export default function Home() {
   const [entries, setEntries] = useState<ReagentEntry[]>([]);
   const [lang, setCurrentLang] = useState<Language>(getLang());
   const incognito = useIncognito();
+  useEffect(() => {
+    if (incognito && sessionStorage.getItem("phlogiston:shield-ready") === "1") {
+      sessionStorage.removeItem("phlogiston:shield-ready");
+      toast({ description: t("shieldOfflineReady") });
+    }
+  }, [incognito]);
   const [isChangingIncognito, setIsChangingIncognito] = useState(false);
   
   // Storage state
@@ -185,9 +189,21 @@ export default function Home() {
   const windowsRunCommand = 'Set-Location ".\\phlogiston-offline"; py -m http.server 8000';
 
   const toggleIncognito = async () => {
+    if (!window.confirm(t(incognito ? "shieldExitConfirm" : "shieldEnterConfirm"))) return;
     setIsChangingIncognito(true);
     try {
       await setIncognito(!incognito);
+      const target = new URL(location.href);
+      if (incognito) target.searchParams.delete("shield");
+      else {
+        target.searchParams.set("shield", "1");
+        try {
+          sessionStorage.setItem("phlogiston:shield-ready", "1");
+        } catch {
+          // The active Shield button still shows the mode after navigation.
+        }
+      }
+      location.replace(target.href);
     } catch {
       toast({ description: t("incognitoUnavailable"), variant: "destructive" });
     } finally {
@@ -1243,27 +1259,23 @@ export default function Home() {
           <h1 className="text-xl md:text-2xl font-bold tracking-tight hidden sm:block">Phlogiston</h1>
         </div>
         <div className="flex items-center gap-2">
-           {!isIsolatedJournal && <Button
+           {isPinnedApp ? (
+             <UpdatePreference lang={lang} incognito={incognito} className={headerButtonClass} />
+           ) : <Button
              type="button"
              variant="outline"
              size="sm"
              className={`${headerButtonClass} max-sm:w-9 max-sm:px-0 aria-pressed:bg-accent aria-pressed:text-accent-foreground aria-pressed:[--button-outline:hsl(var(--primary))]`}
              aria-pressed={incognito}
-             aria-label={t("incognito")}
-             title={t("incognitoHint")}
+             aria-label={t(incognito ? "shieldReady" : "incognito")}
+             title={t(incognito ? "shieldReady" : "incognitoHint")}
              onClick={toggleIncognito}
              disabled={isChangingIncognito}
-             data-testid="button-incognito"
+             data-testid="button-shield"
            >
-             <WifiOff className="size-4" />
-             <span className="hidden sm:inline">{t("incognito")}</span>
+             {isChangingIncognito ? <Loader2 className="size-4 animate-spin" /> : <ShieldCheck className="size-4" />}
+             <span className="hidden sm:inline">{t(isChangingIncognito ? "shieldPreparing" : incognito ? "shieldReady" : "incognito")}</span>
            </Button>}
-           {isPinnedApp ? (
-             <UpdatePreference lang={lang} incognito={incognito} className={headerButtonClass} />
-           ) : (
-             <JournalTransfer lang={lang} className={headerButtonClass}
-               onImport={() => setSavedSyntheses(getSavedSyntheses())} />
-           )}
            <Sheet>
              <SheetTrigger asChild>
                <Button
